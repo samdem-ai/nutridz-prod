@@ -1,0 +1,129 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "noResults": "No results",
+    "seeAll": "See all",
+    "confirm": "Confirm",
+    "back": "Back"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?"
+  },
+  "profile": {
+    "title": "Profile",
+    "personalInfo": "Personal information",
+    "age": "Age",
+    "sex": "Sex",
+    "male": "Male",
+    "female": "Female",
+    "height": "Height (cm)",
+    "weight": "Weight (kg)",
+    "activity": "Activity level",
+    "sedentary": "Sedentary",
+    "light": "Light",
+    "moderate": "Moderate",
+    "active": "Active",
+    "veryActive": "Very active",
+    "goal": "Goal",
+    "weightLoss": "Weight loss",
+    "muscleGain": "Muscle gain",
+    "maintain": "Maintain",
+    "balanced": "Balanced diet",
+    "specific": "Specific diet"
+  },
+  "tabs": {
+    "home": "Home",
+    "journal": "Journal",
+    "camera": "Scan",
+    "goals": "Goals",
+    "community": "Community"
+  },
+  "home": {
+    "title": "Dashboard",
+    "caloriesConsumed": "Calories consumed",
+    "caloriesRemaining": "Remaining",
+    "quickAdd": "Quick add",
+    "todaysMeals": "Today's meals",
+    "hydration": "Hydration"
+  },
+  "journal": {
+    "title": "Food journal",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack",
+    "addFood": "Add food",
+    "dailyTotal": "Daily total",
+    "calories": "Calories",
+    "proteins": "Proteins",
+    "carbs": "Carbs",
+    "fats": "Fats"
+  },
+  "camera": {
+    "title": "Identify food",
+    "takePhoto": "Take a photo",
+    "scanBarcode": "Scan barcode",
+    "analyzing": "Analyzing...",
+    "results": "Results",
+    "confirm": "Confirm this food"
+  },
+  "goals": {
+    "title": "Goals",
+    "weight": "Weight",
+    "bmi": "BMI",
+    "progress": "Progress",
+    "weekly": "Week",
+    "monthly": "Month",
+    "logWeight": "Log weight"
+  },
+  "community": {
+    "title": "Community",
+    "feed": "Feed",
+    "myRecipes": "My recipes",
+    "favorites": "Favorites",
+    "publishRecipe": "Publish recipe",
+    "likes": "Likes",
+    "comments": "Comments"
+  },
+  "chat": {
+    "title": "NutriDz Assistant",
+    "placeholder": "Ask a nutrition question...",
+    "disclaimer": "I am not a doctor. Consult a health professional."
+  },
+  "mealPlan": {
+    "title": "Meal plan",
+    "generate": "Generate plan",
+    "days": "days",
+    "day": "Day"
+  },
+  "hydration": {
+    "title": "Hydration",
+    "addGlass": "Add glass",
+    "glasses": "glasses",
+    "goal": "Goal",
+    "ml": "ml"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "notifications": "Notifications",
+    "mealReminders": "Meal reminders",
+    "waterReminders": "Water reminders",
+    "logout": "Log out"
+  }
+}

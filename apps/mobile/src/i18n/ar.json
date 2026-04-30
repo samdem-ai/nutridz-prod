@@ -1,0 +1,129 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "search": "بحث",
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "retry": "إعادة المحاولة",
+    "noResults": "لا توجد نتائج",
+    "seeAll": "عرض الكل",
+    "confirm": "تأكيد",
+    "back": "رجوع"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "firstName": "الاسم الأول",
+    "lastName": "اللقب",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "personalInfo": "المعلومات الشخصية",
+    "age": "العمر",
+    "sex": "الجنس",
+    "male": "ذكر",
+    "female": "أنثى",
+    "height": "الطول (سم)",
+    "weight": "الوزن (كغ)",
+    "activity": "مستوى النشاط",
+    "sedentary": "خامل",
+    "light": "خفيف",
+    "moderate": "معتدل",
+    "active": "نشط",
+    "veryActive": "نشط جداً",
+    "goal": "الهدف",
+    "weightLoss": "فقدان الوزن",
+    "muscleGain": "اكتساب العضلات",
+    "maintain": "الحفاظ على الوزن",
+    "balanced": "نظام غذائي متوازن",
+    "specific": "نظام غذائي خاص"
+  },
+  "tabs": {
+    "home": "الرئيسية",
+    "journal": "اليومية",
+    "camera": "ماسح",
+    "goals": "الأهداف",
+    "community": "المجتمع"
+  },
+  "home": {
+    "title": "لوحة المتابعة",
+    "caloriesConsumed": "السعرات المستهلكة",
+    "caloriesRemaining": "المتبقية",
+    "quickAdd": "إضافة سريعة",
+    "todaysMeals": "وجبات اليوم",
+    "hydration": "الترطيب"
+  },
+  "journal": {
+    "title": "يومية الطعام",
+    "breakfast": "الفطور",
+    "lunch": "الغداء",
+    "dinner": "العشاء",
+    "snack": "وجبة خفيفة",
+    "addFood": "إضافة طعام",
+    "dailyTotal": "إجمالي اليوم",
+    "calories": "سعرات حرارية",
+    "proteins": "بروتينات",
+    "carbs": "كربوهيدرات",
+    "fats": "دهون"
+  },
+  "camera": {
+    "title": "التعرف على الطعام",
+    "takePhoto": "التقاط صورة",
+    "scanBarcode": "مسح الباركود",
+    "analyzing": "جاري التحليل...",
+    "results": "النتائج",
+    "confirm": "تأكيد هذا الطعام"
+  },
+  "goals": {
+    "title": "الأهداف",
+    "weight": "الوزن",
+    "bmi": "مؤشر كتلة الجسم",
+    "progress": "التقدم",
+    "weekly": "أسبوع",
+    "monthly": "شهر",
+    "logWeight": "تسجيل الوزن"
+  },
+  "community": {
+    "title": "المجتمع",
+    "feed": "المنشورات",
+    "myRecipes": "وصفاتي",
+    "favorites": "المفضلة",
+    "publishRecipe": "نشر وصفة",
+    "likes": "إعجاب",
+    "comments": "تعليقات"
+  },
+  "chat": {
+    "title": "مساعد نيوتريدز",
+    "placeholder": "اطرح سؤالاً عن التغذية...",
+    "disclaimer": "أنا لست طبيباً. استشر أخصائي صحة."
+  },
+  "mealPlan": {
+    "title": "خطة غذائية",
+    "generate": "إنشاء خطة",
+    "days": "أيام",
+    "day": "يوم"
+  },
+  "hydration": {
+    "title": "الترطيب",
+    "addGlass": "إضافة كوب",
+    "glasses": "أكواب",
+    "goal": "الهدف",
+    "ml": "مل"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "notifications": "الإشعارات",
+    "mealReminders": "تذكيرات الوجبات",
+    "waterReminders": "تذكيرات الماء",
+    "logout": "تسجيل الخروج"
+  }
+}

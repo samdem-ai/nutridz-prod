@@ -1,0 +1,88 @@
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Claude worktrees and local artefacts
+.claude/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+venv/
+venv_win/
+.venv/
+env/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+apps/mobile/.expo/
+apps/mobile/dist/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Java / Maven
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build outputs
+build/
+out/
+
+# Mobile platform native
+android/app/build/
+ios/build/
+ios/Pods/
+
+# Logs
+logs/
+*.log
+
+# Database / data
+*.db
+*.sqlite
+*.sqlite3
+
+# Local Docker overrides
+docker-compose.override.yml
+mysql_data/
+postgres_data/
+
+# Generated artefacts
+expo_qr.png

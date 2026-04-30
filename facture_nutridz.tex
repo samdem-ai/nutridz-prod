@@ -1,0 +1,133 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[top=3cm, bottom=3cm, left=3cm, right=3cm]{geometry}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{parskip}
+\usepackage{lmodern}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\begin{document}
+
+% ── TITRE ──────────────────────────────────────────────────────────────────
+\begin{center}
+  {\Large\bfseries FACTURE}
+\end{center}
+
+\vspace{0.5cm}
+
+% ── INFOS FACTURE ───────────────────────────────────────────────────────────
+Facture n° : FA-004\\
+Date : 15 Mars 2026
+
+\vspace{0.8cm}
+
+% ── PRESTATAIRE ─────────────────────────────────────────────────────────────
+\textbf{Prestataire :}
+
+Nom et prénom : DJEMMAL MOHAMMED-AMINE\\
+Statut : Auto-entrepreneur\\
+Numéro d'auto-entrepreneur : 100309070092924575\\
+CCP : 00799999002903240567
+
+\vspace{0.8cm}
+
+% ── CLIENT ──────────────────────────────────────────────────────────────────
+\textbf{Client :}
+
+Société : SPA CyFlex\\
+Adresse : Les Crêtes Lots N° 03 Ilot 31 Grp propriété 57 Hydra, Alger, Algérie.\\
+A.I : 16287105043\\
+N.I.F : 02216105122924\\
+R.C : 16/00 1051229 B22\\
+N.I.S : 00221629029563\\
+Objet : Facturation d'une prestation de services.
+
+\vspace{0.8cm}
+
+% ── TABLEAU ─────────────────────────────────────────────────────────────────
+\textbf{Détails de la prestation :}
+
+\vspace{0.3cm}
+
+\renewcommand{\arraystretch}{1.6}
+\begin{tabularx}{\textwidth}{|X|c|c|c|}
+  \hline
+  \textbf{Désignation Prestation de services} & \textbf{Quantité} & \textbf{Montant (DA)} & \textbf{Total} \\
+  \hline
+  Gestion des utilisateurs \& authentification
+  (création de compte, profil, calcul calorique)
+  & 1 & 18~000 da & 18~000 da \\
+  \hline
+  Identification des aliments par IA
+  (reconnaissance photo CLIP, scanner code-barres, recherche manuelle)
+  & 1 & 35~000 da & 35~000 da \\
+  \hline
+  Journal alimentaire \& informations nutritionnelles
+  (enregistrement repas, score A–E, graphiques)
+  & 1 & 18~000 da & 18~000 da \\
+  \hline
+  Suivi des objectifs santé
+  (poids, IMC, graphiques hebdomadaires et mensuels)
+  & 1 & 12~000 da & 12~000 da \\
+  \hline
+  Assistant IA nutritionnel multilingue
+  (chatbot Gemini — français, arabe, darija, anglais)
+  & 1 & 28~000 da & 28~000 da \\
+  \hline
+  Plan alimentaire automatique
+  (génération personnalisée sur 3 à 7 jours)
+  & 1 & 14~000 da & 14~000 da \\
+  \hline
+  Intégration base de données recettes algériennes
+  (données fournies par le client — structuration et intégration)
+  & 1 & 8~000 da & 8~000 da \\
+  \hline
+  Liste de courses intelligente \& suivi hydratation
+  & 1 & 10~000 da & 10~000 da \\
+  \hline
+  Fonctionnalités communautaires
+  (publication recettes, likes, commentaires, profil public)
+  & 1 & 20~000 da & 20~000 da \\
+  \hline
+  Notifications intelligentes
+  (rappels repas, hydratation, alertes nutritionnelles)
+  & 1 & 5~000 da & 5~000 da \\
+  \hline
+  Backend API \& base de données
+  (FastAPI, PostgreSQL, sécurité)
+  & 1 & 7~000 da & 7~000 da \\
+  \hline
+  Tests, déploiement Android \& iOS, documentation technique
+  & 1 & 5~000 da & 5~000 da \\
+  \hline
+  \multicolumn{3}{|r|}{\textbf{TOTAL}} & \textbf{180~000 da} \\
+  \hline
+\end{tabularx}
+
+\vspace{0.6cm}
+
+% ── MONTANT EN LETTRES ───────────────────────────────────────────────────────
+Montant en lettres : \textbf{cent quatre-vingt mille dinars algériens}
+
+\vspace{1cm}
+
+% ── FAIT À ──────────────────────────────────────────────────────────────────
+Fait à : Blida\\
+Date : 15/03/2026
+
+\vspace{1.5cm}
+
+% ── SIGNATURE ───────────────────────────────────────────────────────────────
+\hspace{1cm} DJEMMAL MOHAMMED-AMINE
+
+\end{document}
