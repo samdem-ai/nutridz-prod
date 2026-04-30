@@ -140,15 +140,23 @@ export default function CameraScreen() {
   };
 
   const handleConfirmAdd = (data: { foodId: number; quantityGrams: number; mealType: string }) => {
+    if (!data.foodId || data.foodId <= 0) {
+      Alert.alert(t('common.error'), 'Invalid food id from AI');
+      return;
+    }
     addEntry.mutate(
       { ...data, logSource: 'AI_PHOTO', date: todayStr() },
       {
         onSuccess: () => {
           setShowAddModal(false);
           setSelectedFood(null);
-          Alert.alert(t('water.added'), t('water.added'));
+          Alert.alert('OK', `Added to journal (${data.mealType})`);
         },
-        onError: () => Alert.alert(t('common.error'), t('common.error')),
+        onError: (e: any) => {
+          const msg = e?.response?.data?.message || e?.message || 'Unknown error';
+          console.warn('Add journal entry failed:', e?.response?.data || e);
+          Alert.alert(t('common.error'), msg);
+        },
       }
     );
   };
