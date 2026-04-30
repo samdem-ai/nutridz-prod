@@ -1,55 +1,98 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 
-// Java exposes recipes under /recipes (not /community/recipes).
-// Feed accepts pagination params: page, size.
-export function useCommunityRecipes(filter?: string) {
+export function useCommunityRecipes(page = 0, size = 20) {
   return useQuery({
-    queryKey: ['community', 'recipes', filter],
+    queryKey: ['recipes', 'feed', page],
     queryFn: async () => {
-      const params: any = {};
-      // No server-side filter by goal in Java feed; client-side filter post-fetch if needed.
-      const { data } = await api.get('/recipes/feed', { params });
+      const { data } = await api.get('/recipes/feed', { params: { page, size } });
       return data;
     },
   });
 }
 
-export function useLikeRecipe() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      await api.post(`/recipes/${id}/like`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['community'] });
+export function useMyRecipes() {
+  return useQuery({
+    queryKey: ['recipes', 'mine'],
+    queryFn: async () => {
+      const { data } = await api.get('/recipes/my');
+      return data;
     },
   });
 }
 
-// Java DTO: { content: string }  (not { contenu })
+export function useRecipe(id: number | null) {
+  return useQuery({
+    queryKey: ['recipes', id],
+    queryFn: async () => {
+      const { data } = await api.get(`/recipes/${id}`);
+      return data;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateRecipe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      title: string;
+      titleAr?: string;
+      description?: string;
+      imageUrl?: string;
+      prepTimeMinutes?: number;
+      servings?: number;
+      category: string;
+      isAlgerian?: boolean;
+      isPublic?: boolean;
+      ingredients?: Array<{ foodId: number; quantityGrams: number; label?: string }>;
+      steps?: Array<{ stepNumber: number; description: string }>;
+    }) => {
+      const { data } = await api.post('/recipes', body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recipes'] }),
+  });
+}
+
+export function useLikeRecipe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.post(`/recipes/${id}/like`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recipes'] }),
+  });
+}
+
 export function useCommentRecipe() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, content }: { id: number; content: string }) => {
       const { data } = await api.post(`/recipes/${id}/comments`, { content });
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['community'] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recipes'] }),
   });
 }
 
-// Java exposes save (not favorite) — semantically equivalent.
-export function useFavoriteRecipe() {
-  const queryClient = useQueryClient();
+export function useSaveRecipe() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
       await api.post(`/recipes/${id}/save`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['community'] });
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recipes'] }),
+  });
+}
+
+export function useReportRecipe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+      const { data } = await api.post(`/recipes/${id}/report`, { reason });
+      return data;
     },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['recipes'] }),
   });
 }

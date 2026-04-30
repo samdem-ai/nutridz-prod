@@ -1,97 +1,124 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Modal, FlatList, ActivityIndicator, Alert,
-  KeyboardAvoidingView, Platform, Keyboard,
+  KeyboardAvoidingView, Platform, Animated,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/constants/colors';
 import { Theme } from '../../src/constants/theme';
 import { useJournalDaily, useJournalSummary, useAddJournalEntry, useDeleteJournalEntry } from '../../src/hooks/useJournal';
 import { useFoodSearch } from '../../src/hooks/useFoods';
+import AddFoodModal from '../../src/components/ui/AddFoodModal';
 
-// Java MealType enum keys
 const MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const;
-type MealType = typeof MEAL_TYPES[number];
-const MEAL_KEYS: Record<MealType, string> = {
+const MEAL_KEY: Record<string, string> = {
   BREAKFAST: 'journal.breakfast',
   LUNCH: 'journal.lunch',
   DINNER: 'journal.dinner',
   SNACK: 'journal.snack',
 };
 
-const MEAL_ICONS: Record<MealType, string> = {
+const MEAL_ICONS: Record<string, string> = {
   BREAKFAST: 'sunny-outline',
   LUNCH: 'restaurant-outline',
   DINNER: 'moon-outline',
   SNACK: 'cafe-outline',
 };
 
+const MEAL_COLORS: Record<string, string> = {
+  BREAKFAST: Colors.meals.petit_dejeuner,
+  LUNCH: Colors.meals.dejeuner,
+  DINNER: Colors.meals.diner,
+  SNACK: Colors.meals.collation,
+};
+
 export default function JournalScreen() {
   const { t } = useTranslation();
 
-  // Date handling
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // selectedDate is the absolute date the user is viewing
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+
+  // Build a 7-day window centered on selectedDate (or shifted if too far in future)
   const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - 3 + i);
+    const d = new Date(selectedDate);
+    d.setDate(selectedDate.getDate() - 3 + i);
     return d;
   });
-  const [selectedDay, setSelectedDay] = useState(3);
+  const selectedDay = 3;
 
-  const selectedDate = weekDays[selectedDay];
   const dateStr = selectedDate.toISOString().split('T')[0];
 
-  // Data hooks
-  const { data: dailyEntries, isLoading: entriesLoading } = useJournalDaily(dateStr);
-  const { data: summary } = useJournalSummary(dateStr);
+  const shiftWeek = (days: number) => {
+    const next = new Date(selectedDate);
+    next.setDate(next.getDate() + days);
+    setSelectedDate(next);
+  };
+
+  const isToday = selectedDate.toDateString() === today.toDateString();
+  const isFuture = selectedDate > today;
+
+  const dailyQ = useJournalDaily(dateStr);
+  const summaryQ = useJournalSummary(dateStr);
+  const { data: dailyData, isLoading: entriesLoading, refetch: refetchDaily } = dailyQ;
+  const { data: summary, refetch: refetchSummary } = summaryQ;
   const addEntry = useAddJournalEntry();
   const deleteEntry = useDeleteJournalEntry();
 
-  // Food search modal state
+  // Refetch on focus so entries added from camera/barcode appear immediately
+  useFocusEffect(
+    useCallback(() => {
+      refetchDaily();
+      refetchSummary();
+    }, [dateStr])
+  );
+
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [activeMealType, setActiveMealType] = useState<MealType>('LUNCH');
+  const [activeMealType, setActiveMealType] = useState<string>('LUNCH');
   const [searchQuery, setSearchQuery] = useState('');
   const { data: searchResults, isLoading: searching } = useFoodSearch(searchQuery);
 
-  // Track keyboard height — Expo Go's softInputMode is "pan" so manual lift needed.
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  useEffect(() => {
-    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvt, (e) => setKeyboardHeight(e.endCoordinates.height));
-    const hideSub = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0));
-    return () => { showSub.remove(); hideSub.remove(); };
-  }, []);
+  const [selectedFood, setSelectedFood] = useState<any>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  const openAddFood = (mealType: MealType) => {
+  const openAddFood = (mealType: string) => {
     setActiveMealType(mealType);
     setSearchQuery('');
     setShowSearchModal(true);
   };
 
-  const handleAddFood = (food: any) => {
+  const handleSelectFood = (food: any) => {
+    setSelectedFood(food);
+    setShowSearchModal(false);
+    setShowAddModal(true);
+  };
+
+  const handleConfirmAdd = (data: { foodId: number; quantityGrams: number; mealType: string }) => {
     addEntry.mutate(
-      { foodId: food.id, quantityGrams: 100, mealType: activeMealType, date: dateStr },
+      { ...data, logSource: 'MANUAL_SEARCH', date: dateStr },
       {
         onSuccess: () => {
-          setShowSearchModal(false);
-          setSearchQuery('');
+          setShowAddModal(false);
+          setSelectedFood(null);
         },
-        onError: () => Alert.alert(t('common.error'), 'Failed to add food'),
+        onError: () => Alert.alert(t('common.error'), t('common.error')),
       }
     );
   };
 
   const handleDeleteEntry = (id: number) => {
     Alert.alert(
-      'Supprimer',
-      'Supprimer cette entree ?',
+      t('common.delete'),
+      t('journal.deleteEntry'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => deleteEntry.mutate(id),
         },
@@ -99,49 +126,89 @@ export default function JournalScreen() {
     );
   };
 
-  // Java response: dailyEntries.meals is { BREAKFAST: [...], LUNCH: [...], DINNER: [...], SNACK: [...] }
-  const entriesByMeal: Record<MealType, any[]> = {
-    BREAKFAST: [], LUNCH: [], DINNER: [], SNACK: [],
-  };
-  if (dailyEntries?.meals) {
-    (Object.entries(dailyEntries.meals) as [MealType, any[]][]).forEach(([meal, entries]) => {
-      if (entriesByMeal[meal]) entriesByMeal[meal] = entries ?? [];
-    });
-  }
+  const meals: Record<string, any[]> = dailyData?.meals || {};
 
-  const calories = dailyEntries?.totalCalories ?? summary?.calories ?? 0;
-  const proteines = dailyEntries?.totalProtein ?? summary?.protein_g ?? 0;
-  const glucides = dailyEntries?.totalCarbs ?? summary?.carbs_g ?? 0;
-  const lipides = dailyEntries?.totalFat ?? summary?.fat_g ?? 0;
+  const calories = summary?.calories || 0;
+  const protein = summary?.protein || 0;
+  const carbs = summary?.carbs || 0;
+  const fat = summary?.fat || 0;
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>{t('journal.title')}</Text>
-          <Text style={styles.date}>
-            {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{t('journal.title')}</Text>
+            <Text style={styles.date}>
+              {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </Text>
+          </View>
+          {!isToday && (
+            <TouchableOpacity
+              style={styles.todayBtn}
+              onPress={() => setSelectedDate(today)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="today" size={14} color={Colors.primary} />
+              <Text style={styles.todayBtnText}>{t('common.today')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Date pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datePicker} contentContainerStyle={styles.datePickerContent}>
-          {weekDays.map((day, i) => (
-            <TouchableOpacity
-              key={i}
-              style={[styles.dayPill, selectedDay === i && styles.dayPillActive]}
-              onPress={() => setSelectedDay(i)}
-            >
-              <Text style={[styles.dayName, selectedDay === i && styles.dayTextActive]}>
-                {day.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
-              </Text>
-              <Text style={[styles.dayNumber, selectedDay === i && styles.dayTextActive]}>
-                {day.getDate()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Date navigation */}
+        <View style={styles.dateNav}>
+          <TouchableOpacity
+            onPress={() => shiftWeek(-7)}
+            style={styles.navArrow}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={18} color={Colors.text} />
+          </TouchableOpacity>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.datePickerContent}
+            style={{ flex: 1 }}
+          >
+            {weekDays.map((day, i) => {
+              const dayIsToday = day.toDateString() === today.toDateString();
+              const dayIsSelected = day.toDateString() === selectedDate.toDateString();
+              const dayIsFuture = day > today;
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[
+                    styles.dayPill,
+                    dayIsSelected && styles.dayPillActive,
+                    dayIsToday && !dayIsSelected && styles.todayBorder,
+                    dayIsFuture && styles.futureDay,
+                  ]}
+                  onPress={() => !dayIsFuture && setSelectedDate(day)}
+                  disabled={dayIsFuture}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dayName, dayIsSelected && styles.dayTextActive]}>
+                    {day.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3)}
+                  </Text>
+                  <Text style={[styles.dayNumber, dayIsSelected && styles.dayTextActive]}>
+                    {day.getDate()}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <TouchableOpacity
+            onPress={() => shiftWeek(7)}
+            style={[styles.navArrow, isFuture && { opacity: 0.3 }]}
+            activeOpacity={0.7}
+            disabled={isFuture}
+          >
+            <Ionicons name="chevron-forward" size={18} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
 
         {/* Daily Summary */}
         <View style={styles.summaryCard}>
@@ -152,17 +219,17 @@ export default function JournalScreen() {
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
-              <Text style={[styles.summaryValue, { color: Colors.macros.proteines }]}>{Math.round(proteines)}g</Text>
+              <Text style={[styles.summaryValue, { color: Colors.macros.proteines }]}>{Math.round(protein)}g</Text>
               <Text style={styles.summaryLabel}>{t('journal.proteins')}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
-              <Text style={[styles.summaryValue, { color: Colors.macros.glucides }]}>{Math.round(glucides)}g</Text>
+              <Text style={[styles.summaryValue, { color: Colors.macros.glucides }]}>{Math.round(carbs)}g</Text>
               <Text style={styles.summaryLabel}>{t('journal.carbs')}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
-              <Text style={[styles.summaryValue, { color: Colors.macros.lipides }]}>{Math.round(lipides)}g</Text>
+              <Text style={[styles.summaryValue, { color: Colors.macros.lipides }]}>{Math.round(fat)}g</Text>
               <Text style={styles.summaryLabel}>{t('journal.fats')}</Text>
             </View>
           </View>
@@ -173,35 +240,49 @@ export default function JournalScreen() {
           <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 40 }} />
         ) : (
           MEAL_TYPES.map((mealType) => {
-            const entries = entriesByMeal[mealType] || [];
+            const entries = meals[mealType] || [];
+            const mealCalories = entries.reduce((sum: number, e: any) => sum + (e.caloriesConsumed || 0), 0);
             return (
               <View key={mealType} style={styles.mealSection}>
                 <View style={styles.mealHeader}>
-                  <View style={[styles.mealAccent, { backgroundColor: Colors.meals[mealType] }]} />
-                  <Ionicons name={MEAL_ICONS[mealType] as any} size={18} color={Colors.meals[mealType]} />
-                  <Text style={styles.mealTitle}>{t(MEAL_KEYS[mealType])}</Text>
-                  <TouchableOpacity style={styles.addButton} onPress={() => openAddFood(mealType)}>
-                    <Ionicons name="add" size={20} color={Colors.primary} />
+                  <View style={[styles.mealIconBg, { backgroundColor: MEAL_COLORS[mealType] + '25' }]}>
+                    <Ionicons name={MEAL_ICONS[mealType] as any} size={18} color={MEAL_COLORS[mealType]} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mealTitle}>{t(MEAL_KEY[mealType])}</Text>
+                    <Text style={styles.mealCalories}>{Math.round(mealCalories)} kcal</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.addButton, { backgroundColor: MEAL_COLORS[mealType] + '20' }]}
+                    onPress={() => openAddFood(mealType)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add" size={22} color={MEAL_COLORS[mealType]} />
                   </TouchableOpacity>
                 </View>
 
                 {entries.length === 0 ? (
-                  <View style={styles.emptyMeal}>
+                  <TouchableOpacity
+                    style={styles.emptyMeal}
+                    onPress={() => openAddFood(mealType)}
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.emptyText}>{t('journal.addFood')}</Text>
-                  </View>
+                  </TouchableOpacity>
                 ) : (
                   entries.map((entry: any) => (
                     <TouchableOpacity
                       key={entry.id}
                       style={styles.entryRow}
                       onLongPress={() => handleDeleteEntry(entry.id)}
+                      activeOpacity={0.7}
                     >
                       <View style={styles.entryInfo}>
                         <Text style={styles.entryName} numberOfLines={1}>
                           {entry.foodName || entry.recipeName || 'Aliment'}
                         </Text>
                         <Text style={styles.entryDetail}>
-                          {entry.quantityGrams}g
+                          {entry.quantityGrams}g · {Math.round(entry.proteinConsumed || 0)}P · {Math.round(entry.carbsConsumed || 0)}G · {Math.round(entry.fatConsumed || 0)}L
                         </Text>
                       </View>
                       <Text style={styles.entryCal}>
@@ -215,44 +296,40 @@ export default function JournalScreen() {
           })
         )}
 
-        {/* Bottom spacer */}
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Food Search Modal */}
-      <Modal
-        visible={showSearchModal}
-        animationType="slide"
-        transparent
-        statusBarTranslucent
-        presentationStyle="overFullScreen"
-        onRequestClose={() => setShowSearchModal(false)}
-      >
+      {/* Food Search Modal — fixed keyboard handling */}
+      <Modal visible={showSearchModal} animationType="slide" transparent onRequestClose={() => setShowSearchModal(false)}>
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <TouchableOpacity
-            style={{ flex: 1, backgroundColor: Colors.overlay }}
-            activeOpacity={1}
-            onPress={() => { setShowSearchModal(false); Keyboard.dismiss(); }}
-          />
-          <View style={[styles.modalContent, { maxHeight: undefined, flexShrink: 1 }]}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ajouter un aliment</Text>
-              <TouchableOpacity onPress={() => setShowSearchModal(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
+              <Text style={styles.modalTitle}>{t('journal.addToMeal', { meal: t(MEAL_KEY[activeMealType]) })}</Text>
+              <TouchableOpacity onPress={() => setShowSearchModal(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={22} color={Colors.text} />
               </TouchableOpacity>
             </View>
 
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Rechercher un aliment..."
-              placeholderTextColor={Colors.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus
-            />
+            <View style={styles.searchInputWrap}>
+              <Ionicons name="search" size={18} color={Colors.textMuted} style={{ marginLeft: 12 }} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t('journal.searchFood')}
+                placeholderTextColor={Colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ paddingHorizontal: 12 }}>
+                  <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
 
             {searching && (
               <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 16 }} />
@@ -266,27 +343,43 @@ export default function JournalScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.searchResultItem}
-                  onPress={() => handleAddFood(item)}
-                  disabled={addEntry.isPending}
+                  onPress={() => handleSelectFood(item)}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.searchResultInfo}>
                     <Text style={styles.searchResultName} numberOfLines={1}>{item.name}</Text>
                     <Text style={styles.searchResultMeta}>
-                      {item.caloriesPer100g || 0} kcal / 100g
+                      {item.caloriesPer100g || 0} kcal · {item.proteinPer100g || 0}P · {item.carbsPer100g || 0}G · {item.fatPer100g || 0}L /100g
                     </Text>
                   </View>
-                  <Ionicons name="add-circle" size={24} color={Colors.primary} />
+                  <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
                 searchQuery.length >= 2 && !searching ? (
-                  <Text style={styles.noResults}>Aucun resultat</Text>
+                  <View style={styles.noResultsContainer}>
+                    <Ionicons name="search" size={32} color={Colors.textMuted} />
+                    <Text style={styles.noResults}>{t('journal.noFoodFound')}</Text>
+                  </View>
+                ) : searchQuery.length < 2 ? (
+                  <Text style={styles.searchHint}>{t('journal.typeMin')}</Text>
                 ) : null
               }
             />
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Add Food Modal with quantity/serving picker */}
+      <AddFoodModal
+        visible={showAddModal}
+        food={selectedFood}
+        defaultMealType={activeMealType}
+        showMealPicker={false}
+        onClose={() => { setShowAddModal(false); setSelectedFood(null); }}
+        onConfirm={handleConfirmAdd}
+        loading={addEntry.isPending}
+      />
     </View>
   );
 }
@@ -294,15 +387,47 @@ export default function JournalScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { paddingHorizontal: Theme.spacing.lg },
-  header: { paddingTop: 60, marginBottom: Theme.spacing.lg },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 60,
+    marginBottom: Theme.spacing.lg,
+  },
   title: { fontSize: Theme.fontSize.xxl, fontWeight: Theme.fontWeight.bold, color: Colors.text },
-  date: { fontSize: Theme.fontSize.sm, color: Colors.textSecondary, marginTop: Theme.spacing.xs },
-  datePicker: { marginBottom: Theme.spacing.lg },
-  datePickerContent: { gap: Theme.spacing.sm },
+  date: { fontSize: Theme.fontSize.sm, color: Colors.textSecondary, marginTop: Theme.spacing.xs, textTransform: 'capitalize' },
+  todayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.primaryMuted,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  todayBtnText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  dateNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: Theme.spacing.lg,
+  },
+  navArrow: {
+    width: 32, height: 56, borderRadius: 8,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  futureDay: { opacity: 0.3 },
+  datePickerContent: { gap: Theme.spacing.sm, paddingHorizontal: 4 },
   dayPill: {
-    width: 48,
+    width: 52,
     paddingVertical: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.xl,
+    borderRadius: Theme.borderRadius.lg,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.surfaceBorder,
@@ -312,6 +437,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
+  todayBorder: { borderColor: Colors.primary },
   dayName: { fontSize: Theme.fontSize.xs, color: Colors.textMuted, marginBottom: 4 },
   dayNumber: { fontSize: Theme.fontSize.lg, fontWeight: Theme.fontWeight.bold, color: Colors.text },
   dayTextActive: { color: '#FFFFFF' },
@@ -327,51 +453,50 @@ const styles = StyleSheet.create({
   mealSection: {
     ...Theme.darkCard,
     marginBottom: Theme.spacing.md,
-    paddingLeft: 0,
-    overflow: 'hidden',
   },
   mealHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: Theme.spacing.lg,
-    marginBottom: Theme.spacing.sm,
-    gap: Theme.spacing.sm,
+    gap: Theme.spacing.md,
+    marginBottom: Theme.spacing.md,
   },
-  mealAccent: {
-    position: 'absolute',
-    left: 0,
-    top: -Theme.spacing.lg,
-    bottom: -Theme.spacing.lg,
-    width: 3,
-    borderRadius: 2,
+  mealIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mealTitle: {
-    flex: 1,
     fontSize: Theme.fontSize.md,
     fontWeight: Theme.fontWeight.semibold,
     color: Colors.text,
   },
+  mealCalories: {
+    fontSize: Theme.fontSize.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
   addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: Colors.primaryMuted,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Theme.spacing.lg,
   },
   emptyMeal: {
-    padding: Theme.spacing.lg,
-    paddingLeft: Theme.spacing.lg + Theme.spacing.lg,
+    paddingVertical: Theme.spacing.lg,
     alignItems: 'center',
+    borderRadius: Theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    borderStyle: 'dashed',
   },
   emptyText: { color: Colors.textMuted, fontSize: Theme.fontSize.sm },
   entryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Theme.spacing.lg,
-    paddingLeft: Theme.spacing.lg + Theme.spacing.lg,
     paddingVertical: Theme.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.surfaceBorder,
@@ -379,7 +504,7 @@ const styles = StyleSheet.create({
   entryInfo: { flex: 1, marginRight: Theme.spacing.sm },
   entryName: {
     fontSize: Theme.fontSize.sm,
-    fontWeight: Theme.fontWeight.medium,
+    fontWeight: Theme.fontWeight.semibold,
     color: Colors.text,
   },
   entryDetail: {
@@ -389,21 +514,28 @@ const styles = StyleSheet.create({
   },
   entryCal: {
     fontSize: Theme.fontSize.sm,
-    fontWeight: Theme.fontWeight.semibold,
+    fontWeight: Theme.fontWeight.bold,
     color: Colors.macros.calories,
   },
-  // Modal styles
+  // Search modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: Colors.overlay,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: Colors.background,
-    borderTopLeftRadius: Theme.borderRadius.xl,
-    borderTopRightRadius: Theme.borderRadius.xl,
-    maxHeight: '80%',
-    padding: Theme.spacing.xl,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    height: '85%',
+    paddingHorizontal: Theme.spacing.xl,
+    paddingTop: 8,
+  },
+  modalHandle: {
+    width: 40, height: 5, borderRadius: 3,
+    backgroundColor: Colors.surfaceLight,
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -412,22 +544,34 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.lg,
   },
   modalTitle: {
-    fontSize: Theme.fontSize.xl,
+    fontSize: Theme.fontSize.lg,
     fontWeight: Theme.fontWeight.bold,
     color: Colors.text,
   },
-  searchInput: {
+  closeBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.inputBg,
     borderWidth: 1,
     borderColor: Colors.surfaceBorder,
     borderRadius: Theme.borderRadius.md,
-    padding: Theme.spacing.lg,
-    fontSize: Theme.fontSize.md,
-    color: Colors.text,
     marginBottom: Theme.spacing.md,
   },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: Theme.spacing.md,
+    fontSize: Theme.fontSize.md,
+    color: Colors.text,
+  },
   searchList: {
-    maxHeight: 400,
+    flex: 1,
   },
   searchResultItem: {
     flexDirection: 'row',
@@ -447,10 +591,19 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: Theme.spacing.xxxl,
+    gap: Theme.spacing.md,
+  },
   noResults: {
-    textAlign: 'center',
     color: Colors.textMuted,
     fontSize: Theme.fontSize.md,
+  },
+  searchHint: {
+    textAlign: 'center',
+    color: Colors.textMuted,
+    fontSize: Theme.fontSize.sm,
     marginTop: Theme.spacing.xl,
   },
 });

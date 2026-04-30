@@ -20,22 +20,14 @@ export default function RegisterScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const register = useAuthStore((s) => s.register);
-  // Java backend requires `username` (not first/last name) — concatenate locally for display.
-  const [form, setForm] = useState({ email: '', password: '', firstName: '', lastName: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!form.email || !form.password) return;
+    if (!form.username || !form.email || !form.password) return;
     setLoading(true);
     try {
-      const username =
-        (form.firstName.trim() + ' ' + form.lastName.trim()).trim() ||
-        form.email.split('@')[0];
-      await register({
-        email: form.email,
-        password: form.password,
-        username,
-      });
+      await register(form.username, form.email, form.password);
       router.replace('/(auth)/profile-setup');
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.message || 'Registration failed');
@@ -56,17 +48,11 @@ export default function RegisterScreen() {
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder={t('auth.firstName')}
+            placeholder="Nom d'utilisateur"
             placeholderTextColor={Colors.textMuted}
-            value={form.firstName}
-            onChangeText={(v) => setForm({ ...form, firstName: v })}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t('auth.lastName')}
-            placeholderTextColor={Colors.textMuted}
-            value={form.lastName}
-            onChangeText={(v) => setForm({ ...form, lastName: v })}
+            value={form.username}
+            onChangeText={(v) => setForm({ ...form, username: v })}
+            autoCapitalize="none"
           />
           <TextInput
             style={styles.input}

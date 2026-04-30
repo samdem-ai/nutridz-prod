@@ -19,7 +19,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   loadSettings: async () => {
     try {
-      const lang = await AsyncStorage.getItem('language');
+      let lang = await AsyncStorage.getItem('language');
+      // Migrate removed languages to default
+      if (lang === 'darija' || (lang && !['fr', 'en', 'ar'].includes(lang))) {
+        lang = 'fr';
+        await AsyncStorage.setItem('language', lang);
+      }
       if (lang) {
         changeLanguage(lang);
         set({ language: lang });

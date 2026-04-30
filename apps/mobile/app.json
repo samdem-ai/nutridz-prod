@@ -24,7 +24,6 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "softwareKeyboardLayoutMode": "resize",
       "package": "com.nutridz.app"
     },
     "web": {

@@ -39,12 +39,12 @@ export const Colors = {
     E: '#EF4444',
   },
 
-  // Meal type colors — keys match Java MealType enum
+  // Meal type colors
   meals: {
-    BREAKFAST: '#F59E0B',
-    LUNCH: '#22C55E',
-    DINNER: '#3B82F6',
-    SNACK: '#8B5CF6',
+    petit_dejeuner: '#F59E0B',
+    dejeuner: '#22C55E',
+    diner: '#3B82F6',
+    collation: '#8B5CF6',
   },
 
   // Hydration

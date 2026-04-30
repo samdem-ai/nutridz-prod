@@ -8,6 +8,7 @@ interface MacroBarProps {
   current: number;
   target: number;
   color: string;
+  icon?: string;
   unit?: string;
 }
 
@@ -19,6 +20,7 @@ export default function MacroBar({
   unit = 'g',
 }: MacroBarProps) {
   const progress = Math.min(current / Math.max(target, 1), 1);
+  const remaining = Math.max(target - current, 0);
 
   return (
     <View style={styles.container}>
@@ -28,7 +30,8 @@ export default function MacroBar({
           <Text style={styles.label}>{label}</Text>
         </View>
         <Text style={styles.value}>
-          {current}<Text style={styles.target}>/{target}{unit}</Text>
+          <Text style={{ color }}>{Math.round(current)}</Text>
+          <Text style={styles.target}>/{target}{unit}</Text>
         </Text>
       </View>
       <View style={styles.track}>
@@ -39,13 +42,16 @@ export default function MacroBar({
           ]}
         />
       </View>
+      <Text style={styles.remaining}>
+        {remaining > 0 ? `${Math.round(remaining)}${unit} restant` : 'Objectif atteint!'}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Theme.spacing.md,
+    marginBottom: Theme.spacing.lg,
   },
   header: {
     flexDirection: 'row',
@@ -58,14 +64,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     marginRight: 8,
   },
   label: {
     fontSize: Theme.fontSize.sm,
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontWeight: Theme.fontWeight.medium,
   },
   value: {
@@ -78,13 +84,19 @@ const styles = StyleSheet.create({
     fontWeight: Theme.fontWeight.regular,
   },
   track: {
-    height: 6,
+    height: 8,
     backgroundColor: Colors.surfaceLight,
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
+  },
+  remaining: {
+    fontSize: Theme.fontSize.xs,
+    color: Colors.textMuted,
+    marginTop: 4,
+    textAlign: 'right',
   },
 });

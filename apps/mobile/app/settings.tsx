@@ -11,7 +11,6 @@ const LANGUAGES = [
   { code: 'fr', label: 'Francais', flag: '🇫🇷' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
   { code: 'ar', label: 'العربية', flag: '🇩🇿' },
-  { code: 'darija', label: 'الدارجة', flag: '🇩🇿' },
 ];
 
 export default function SettingsScreen() {
@@ -27,6 +26,33 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Profile / Targets */}
+      <Text style={styles.sectionTitle}>{t('settings.profileGoals')}</Text>
+      <View style={styles.card}>
+        <TouchableOpacity
+          style={[styles.settingRow, styles.langBorder]}
+          onPress={() => router.push('/targets' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingLeft}>
+            <Ionicons name="flag" size={18} color={Colors.primary} />
+            <Text style={styles.settingLabel}>{t('settings.myObjectives')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingRow}
+          onPress={() => router.push('/(auth)/profile-setup' as any)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingLeft}>
+            <Ionicons name="person" size={18} color={Colors.textSecondary} />
+            <Text style={styles.settingLabel}>{t('settings.editProfile')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+
       {/* Language */}
       <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
       <View style={styles.card}>
@@ -62,7 +88,24 @@ export default function SettingsScreen() {
         <View style={[styles.settingRow, styles.langBorder]}>
           <View style={styles.settingLeft}>
             <Ionicons name="restaurant-outline" size={18} color={Colors.textSecondary} />
-            <Text style={styles.settingLabel}>{t('settings.mealReminders')}</Text>
+            <View style={styles.settingTexts}>
+              <Text style={styles.settingLabel}>{t('settings.mealReminders')}</Text>
+              <Text style={styles.settingSub}>8h · 13h · 20h</Text>
+            </View>
+          </View>
+          <Switch
+            value={true}
+            trackColor={{ false: Colors.surfaceLight, true: Colors.primary }}
+            thumbColor="#FFF"
+          />
+        </View>
+        <View style={[styles.settingRow, styles.langBorder]}>
+          <View style={styles.settingLeft}>
+            <Ionicons name="water-outline" size={18} color={Colors.textSecondary} />
+            <View style={styles.settingTexts}>
+              <Text style={styles.settingLabel}>{t('settings.waterReminders')}</Text>
+              <Text style={styles.settingSub}>10h30 · 14h30 · 17h30</Text>
+            </View>
           </View>
           <Switch
             value={true}
@@ -72,8 +115,11 @@ export default function SettingsScreen() {
         </View>
         <View style={styles.settingRow}>
           <View style={styles.settingLeft}>
-            <Ionicons name="water-outline" size={18} color={Colors.textSecondary} />
-            <Text style={styles.settingLabel}>{t('settings.waterReminders')}</Text>
+            <Ionicons name="flame-outline" size={18} color={Colors.textSecondary} />
+            <View style={styles.settingTexts}>
+              <Text style={styles.settingLabel}>{t('settings.streakReminder')}</Text>
+              <Text style={styles.settingSub}>21h30</Text>
+            </View>
           </View>
           <Switch
             value={true}
@@ -160,8 +206,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Theme.spacing.lg,
   },
-  settingLeft: { flexDirection: 'row', alignItems: 'center', gap: Theme.spacing.md },
+  settingLeft: { flexDirection: 'row', alignItems: 'center', gap: Theme.spacing.md, flex: 1 },
+  settingTexts: { flex: 1 },
   settingLabel: { fontSize: Theme.fontSize.md, color: Colors.text },
+  settingSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
   logoutButton: {
     marginTop: Theme.spacing.xxxl,
     flexDirection: 'row',

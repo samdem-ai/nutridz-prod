@@ -14,7 +14,6 @@ import { useAuthStore } from '../../src/store/authStore';
 import { Colors } from '../../src/constants/colors';
 import { Theme } from '../../src/constants/theme';
 
-// Keys must match Java NutritionGoal enum
 const GOALS = [
   { key: 'WEIGHT_LOSS', labelKey: 'profile.weightLoss' },
   { key: 'MUSCLE_GAIN', labelKey: 'profile.muscleGain' },
@@ -22,7 +21,6 @@ const GOALS = [
   { key: 'BALANCED', labelKey: 'profile.balanced' },
 ];
 
-// Keys must match Java ActivityLevel enum
 const ACTIVITY_LEVELS = [
   { key: 'SEDENTARY', labelKey: 'profile.sedentary' },
   { key: 'LIGHT', labelKey: 'profile.light' },
@@ -37,12 +35,11 @@ export default function ProfileSetupScreen() {
   const updateProfile = useAuthStore((s) => s.updateProfile);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
-    birthDate: '',                  // ISO YYYY-MM-DD
-    gender: '',                     // MALE | FEMALE
+    gender: '',
     heightCm: '',
     weightKg: '',
-    activityLevel: '',              // SEDENTARY | LIGHT | MODERATE | VERY_ACTIVE | EXTRA_ACTIVE
-    nutritionGoal: '',              // WEIGHT_LOSS | MUSCLE_GAIN | MAINTENANCE | BALANCED
+    activityLevel: '',
+    nutritionGoal: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -50,13 +47,12 @@ export default function ProfileSetupScreen() {
     setLoading(true);
     try {
       await updateProfile({
-        birthDate: form.birthDate || undefined,
         gender: form.gender || undefined,
         heightCm: form.heightCm ? parseFloat(form.heightCm) : undefined,
         weightKg: form.weightKg ? parseFloat(form.weightKg) : undefined,
         activityLevel: form.activityLevel || undefined,
         nutritionGoal: form.nutritionGoal || undefined,
-      });
+      } as any);
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert(t('common.error'), 'Failed to save profile');
@@ -73,14 +69,14 @@ export default function ProfileSetupScreen() {
             <Text style={styles.stepTitle}>{t('profile.personalInfo')}</Text>
             <Text style={styles.label}>{t('profile.sex')}</Text>
             <View style={styles.row}>
-              {['MALE', 'FEMALE'].map((s) => (
+              {[{ key: 'MALE', label: 'profile.male' }, { key: 'FEMALE', label: 'profile.female' }].map((s) => (
                 <TouchableOpacity
-                  key={s}
-                  style={[styles.chip, form.gender === s && styles.chipActive]}
-                  onPress={() => setForm({ ...form, gender: s })}
+                  key={s.key}
+                  style={[styles.chip, form.gender === s.key && styles.chipActive]}
+                  onPress={() => setForm({ ...form, gender: s.key })}
                 >
-                  <Text style={[styles.chipText, form.gender === s && styles.chipTextActive]}>
-                    {t(s === 'MALE' ? 'profile.male' : 'profile.female')}
+                  <Text style={[styles.chipText, form.gender === s.key && styles.chipTextActive]}>
+                    {t(s.label)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -144,7 +140,6 @@ export default function ProfileSetupScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>NutriDz</Text>
 
-      {/* Progress dots */}
       <View style={styles.dotsRow}>
         {[0, 1, 2].map((i) => (
           <View
