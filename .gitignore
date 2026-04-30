@@ -86,3 +86,14 @@ postgres_data/
 
 # Generated artefacts
 expo_qr.png
+
+# Source documents / spreadsheets (not needed in repo)
+*.pdf
+*.xlsx
+*.xls
+*.docx
+*.doc
+*.tex
+*.aux
+*.out
+*.toc
