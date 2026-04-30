@@ -1,0 +1,88 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: nutridz_mysql
+    environment:
+      MYSQL_DATABASE: nutridz_db
+      MYSQL_USER: nutridz_user
+      MYSQL_PASSWORD: nutridz_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: nutridz_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: nutridz_user
+      RABBITMQ_DEFAULT_PASS: nutridz_pass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: nutridz_ai
+    ports:
+      - "8000:8000"
+    environment:
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-mistralai/ministral-14b-instruct-2512}
+      NVIDIA_VISION_MODEL: ${NVIDIA_VISION_MODEL:-meta/llama-3.2-90b-vision-instruct}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build: .
+    container_name: nutridz_backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/nutridz_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: nutridz_user
+      SPRING_DATASOURCE_PASSWORD: nutridz_pass
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: nutridz_user
+      SPRING_RABBITMQ_PASSWORD: nutridz_pass
+
+      JWT_SECRET: ${JWT_SECRET:-nutridz_super_secret_key_change_in_production}
+      JWT_EXPIRATION: 86400000
+
+      AI_SERVICE_URL: http://ai-service:8000
+
+      APP_BASE_URL: http://localhost:8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

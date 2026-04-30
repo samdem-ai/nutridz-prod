@@ -1,0 +1,413 @@
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+import lydiacharif.nutridzbackend.Enums.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ChatMessage {
+    private Long id;
+    private Long userId;
+    private MessageRole role;
+    private String content;
+    private LocalDateTime sentAt;
+}
+
+
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+import lydiacharif.nutridzbackend.Enums.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Food {
+    private Long id;
+    private String name;
+    private String nameAr;
+    private FoodCategory category;
+    private FoodSource source;
+    private Float caloriesPer100g;
+    private Float proteinPer100g;
+    private Float carbsPer100g;
+    private Float fatPer100g;
+    private Float fiberPer100g;
+    private Float sugarPer100g;
+    private Float saltPer100g;
+    private NutritionalScore nutritionalScore;
+    private String barcode;
+    private String imageUrl;
+    private Boolean verified;
+}
+
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class FoodServingSize {
+    private Long id;
+    private Long foodId;
+    private String label;
+    private Float grams;
+}
+
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class HydrationLog {
+    private Long id;
+    private Long userId;
+    private LocalDate date;
+    private Float totalMl;
+}
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+import lydiacharif.nutridzbackend.Enums.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class JournalEntry {
+    private Long id;
+    private Long userId;
+    private LocalDate date;
+    private MealType mealType;
+    private Long foodId;
+    private Long recipeId;
+    private Float quantityGrams;
+    private Float caloriesConsumed;
+    private Float proteinConsumed;
+    private Float carbsConsumed;
+    private Float fatConsumed;
+    private LogSource logSource;
+    private LocalDateTime loggedAt;
+}
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MealLog {
+    private Long id;
+    private Long userId;
+    private LocalDate date;
+    private Float totalCalories;
+    private Float totalProtein;
+    private Float totalCarbs;
+    private Float totalFat;
+    private Float waterMl;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MealPlan {
+    private Long id;
+    private Long userId;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private Integer durationDays;
+    private LocalDateTime generatedAt;
+}
+
+
+
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+import lydiacharif.nutridzbackend.Enums.*;
+
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MealPlanItem {
+    private Long id;
+    private Long mealPlanId;
+    private LocalDate date;
+    private MealType mealType;
+    private Long recipeId;    // nullable — either recipe or food
+    private Long foodId;      // nullable — either recipe or food
+    private Float quantityGrams;
+    private Float calories;
+}
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+import lydiacharif.nutridzbackend.Enums.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Notification {
+    private Long id;
+    private Long userId;
+    private NotificationType type;
+    private String title;
+    private String body;
+    private Boolean isRead;
+    private LocalDateTime scheduledAt;
+}
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+import lydiacharif.nutridzbackend.Enums.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Recipe {
+    private Long id;
+    private Long authorId;
+    private String title;
+    private String titleAr;
+    private String description;
+    private String imageUrl;
+    private Integer prepTimeMinutes;
+    private Integer servings;
+    private Float caloriesPerServing;
+    private Float proteinPerServing;
+    private Float carbsPerServing;
+    private Float fatPerServing;
+    private RecipeCategory category;
+    private Boolean isAlgerian;
+    private Boolean isPublic;
+    private Integer likesCount;
+    private LocalDateTime createdAt;
+}
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RecipeComment {
+    private Long id;
+    private Long userId;
+    private Long recipeId;
+    private String content;
+    private LocalDateTime createdAt;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RecipeIngredient {
+    private Long id;
+    private Long recipeId;
+    private Long foodId;
+    private Float quantityGrams;
+    private String label;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RecipeLike {
+    private Long id;
+    private Long userId;
+    private Long recipeId;
+    private LocalDateTime likedAt;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RecipeStep {
+    private Long id;
+    private Long recipeId;
+    private Integer stepNumber;
+    private String description;
+}
+
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class SavedRecipe {
+    private Long id;
+    private Long userId;
+    private Long recipeId;
+    private LocalDateTime savedAt;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ShoppingListItem {
+    private Long id;
+    private Long mealPlanId;
+    private Long foodId;
+    private Float quantityGrams;
+    private Boolean checked;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+import lydiacharif.nutridzbackend.Enums.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User {
+    private Long id;
+    private String username;
+    private String email;
+    private String passwordHash;
+    private Role role;
+    private Gender gender;
+    private LocalDate birthDate;
+    private Float heightCm;
+    private Float weightKg;
+    private ActivityLevel activityLevel;
+    private WorkType workType;
+    private WorkoutType workoutType;
+    private DiabetesType diabetesType;
+    private String allergies;
+    private NutritionGoal nutritionGoal;
+    private Float dailyCalorieTarget;
+    private Float dailyProteinTarget;
+    private Float dailyCarbTarget;
+    private Float dailyFatTarget;
+    private Float dailyWaterTargetMl;
+    private LocalDateTime createdAt;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UserProfile {
+    private Long id;
+    private Long userId;
+    private String bio;
+    private String avatarUrl;
+    private Integer totalLikes;
+    private Integer totalRecipes;
+    private Boolean isPublic;
+}
+
+package lydiacharif.nutridzbackend.Models;
+
+import lombok.*;
+
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class WeightLog {
+    private Long id;
+    private Long userId;
+    private Float weightKg;
+    private Float bmi;
+    private LocalDate recordedOn;
+}
+
+
+melissacharif07@gmail.com
+user repo fixing the map isusue w tani idk what else we will see 
