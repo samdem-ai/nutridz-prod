@@ -13,24 +13,57 @@ import {
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
+import {
+  useOnboardingStore,
+  buildProfilePatch,
+  getEnabledReminders,
+} from '../../src/store/onboardingStore';
 import { Colors } from '../../src/constants/colors';
 import { Theme } from '../../src/constants/theme';
+import { scheduleNotificationsIfPermitted } from '../../src/services/notifications';
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const register = useAuthStore((s) => s.register);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
+  const onboardingGoal = useOnboardingStore((s) => s.goal);
+  const resetOnboarding = useOnboardingStore((s) => s.reset);
+
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
+
+  const hasOnboardingData = !!onboardingGoal;
 
   const handleRegister = async () => {
     if (!form.username || !form.email || !form.password) return;
     setLoading(true);
     try {
       await register(form.username, form.email, form.password);
-      router.replace('/(auth)/profile-setup');
+
+      if (hasOnboardingData) {
+        // Push collected profile data
+        const patch = buildProfilePatch();
+        try {
+          await updateProfile(patch as any);
+        } catch (e) {
+          console.warn('updateProfile failed:', e);
+        }
+
+        // Schedule reminders user opted-in for
+        const reminders = getEnabledReminders();
+        if (reminders.length > 0) {
+          scheduleNotificationsIfPermitted().catch(() => {});
+        }
+
+        resetOnboarding();
+        router.replace('/(tabs)');
+      } else {
+        // Direct register without onboarding → legacy 3-step setup
+        router.replace('/(auth)/profile-setup');
+      }
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.response?.data?.message || 'Registration failed');
+      Alert.alert(t('common.error'), error?.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -43,7 +76,9 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>NutriDz</Text>
-        <Text style={styles.subtitle}>{t('auth.register')}</Text>
+        <Text style={styles.subtitle}>
+          {hasOnboardingData ? 'Create your account to save your plan' : t('auth.register')}
+        </Text>
 
         <View style={styles.form}>
           <TextInput
@@ -83,7 +118,7 @@ export default function RegisterScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
           <Text style={styles.link}>
             {t('auth.hasAccount')}{' '}
             <Text style={styles.linkBold}>{t('auth.login')}</Text>

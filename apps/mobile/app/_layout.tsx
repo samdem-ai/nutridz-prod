@@ -45,6 +45,7 @@ export default function RootLayout() {
       <View style={{ flex: 1, backgroundColor: Colors.background }}>
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false, ...screenDefaults }}>
+          <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="chat" options={{ headerShown: false }} />

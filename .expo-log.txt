@@ -1,0 +1,5 @@
+Starting project at C:\Users\debai\Desktop\mobible_nutri\apps\mobile
+Starting Metro Bundler
+Tunnel connected.
+Tunnel ready.
+CommandError: "expo-notifications" is added as a dependency in your project's package.json but it doesn't seem to be installed. Run "npm install", or the equivalent for your package manager, and try again.
