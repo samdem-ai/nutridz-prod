@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import OnboardingHeader from '../../src/components/onboarding/OnboardingHeader';
 import VerticalRulerPicker from '../../src/components/onboarding/VerticalRulerPicker';
 import UnitToggle from '../../src/components/onboarding/UnitToggle';
@@ -16,15 +17,16 @@ const cmToFt = (cm: number) => {
 };
 
 export default function HeightScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { heightCm, setHeight, heightUnit, setHeightUnit } = useOnboardingStore();
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <OnboardingHeader progress={4 / 9} />
+      <OnboardingHeader progress={4 / 10} />
       <View style={styles.content}>
         <View style={styles.left}>
-          <Text style={styles.title}>Select Your Height</Text>
+          <Text style={styles.title}>{t('onboarding.selectHeight')}</Text>
           <View style={styles.toggleWrap}>
             <UnitToggle
               options={['ft', 'cm']}
@@ -52,7 +54,7 @@ export default function HeightScreen() {
       </View>
       <View style={styles.footer}>
         <PrimaryButton
-          label="Next"
+          label={t('common.next')}
           onPress={() => router.push('/(onboarding)/current-weight')}
         />
       </View>
@@ -64,7 +66,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: OnboardingColors.bg },
   content: { flex: 1, paddingHorizontal: 24, paddingTop: 8, flexDirection: 'row' },
   left: { flex: 1, alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: 8 },
-  right: { width: 90, justifyContent: 'center' },
+  right: { width: 120, justifyContent: 'center', alignItems: 'flex-end' },
   title: { fontSize: 24, fontWeight: '800', color: OnboardingColors.text, marginBottom: 24 },
   toggleWrap: { marginBottom: 60 },
   valueWrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 6 },

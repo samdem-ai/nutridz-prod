@@ -23,7 +23,8 @@ const isWaterFood = (food: any): boolean => {
   return WATER_KEYWORDS.some((kw) => name.includes(kw) || nameAr.includes(kw));
 };
 
-const todayStr = () => new Date().toISOString().split('T')[0];
+import { localDateStr } from '../../src/utils/date';
+const todayStr = () => localDateStr();
 
 const getCurrentMealType = () => {
   const h = new Date().getHours();

@@ -20,7 +20,7 @@ import {
 } from '../../src/store/onboardingStore';
 import { Colors } from '../../src/constants/colors';
 import { Theme } from '../../src/constants/theme';
-import { scheduleNotificationsIfPermitted } from '../../src/services/notifications';
+import { scheduleOnboardingReminders } from '../../src/services/notifications';
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
@@ -28,7 +28,7 @@ export default function RegisterScreen() {
   const register = useAuthStore((s) => s.register);
   const updateProfile = useAuthStore((s) => s.updateProfile);
   const onboardingGoal = useOnboardingStore((s) => s.goal);
-  const resetOnboarding = useOnboardingStore((s) => s.reset);
+  const markOnboardingDone = useOnboardingStore((s) => s.markCompleted);
 
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -50,13 +50,14 @@ export default function RegisterScreen() {
           console.warn('updateProfile failed:', e);
         }
 
-        // Schedule reminders user opted-in for
+        // Schedule reminders user opted-in for (uses user-chosen times, not hardcoded)
         const reminders = getEnabledReminders();
         if (reminders.length > 0) {
-          scheduleNotificationsIfPermitted().catch(() => {});
+          scheduleOnboardingReminders(reminders).catch(() => {});
         }
 
-        resetOnboarding();
+        // Keep onboarding data persisted for in-app calculations
+        markOnboardingDone();
         router.replace('/(tabs)');
       } else {
         // Direct register without onboarding → legacy 3-step setup

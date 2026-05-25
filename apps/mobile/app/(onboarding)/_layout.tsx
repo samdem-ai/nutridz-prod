@@ -19,6 +19,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="current-weight" />
       <Stack.Screen name="target-weight" />
       <Stack.Screen name="activity" />
+      <Stack.Screen name="diabetes" />
       <Stack.Screen name="pace" />
       <Stack.Screen name="reminders" />
       <Stack.Screen name="loading" options={{ animation: 'fade' }} />

@@ -7,6 +7,7 @@ import { useAuthStore } from '../src/store/authStore';
 import { useSettingsStore } from '../src/store/settingsStore';
 import { Colors } from '../src/constants/colors';
 import { scheduleNotificationsIfPermitted } from '../src/services/notifications';
+import { getEnabledReminders } from '../src/store/onboardingStore';
 import AiChatFab from '../src/components/ui/AiChatFab';
 import '../src/i18n';
 
@@ -35,8 +36,18 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Schedule smart notifications on auth (idempotent)
-      scheduleNotificationsIfPermitted().catch(() => {});
+      // Schedule smart notifications using user-chosen meal slots from onboarding
+      // + per-user hydration/streak prefs from settings (all persisted).
+      const slots = getEnabledReminders();
+      const s = useSettingsStore.getState();
+      scheduleNotificationsIfPermitted(
+        {
+          enableMealReminders: true,
+          enableHydrationNudges: s.hydrationNudges,
+          enableStreakReminder: s.streakReminder,
+        },
+        slots
+      ).catch(() => {});
     }
   }, [isAuthenticated]);
 

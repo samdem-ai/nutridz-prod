@@ -3,10 +3,12 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { OnboardingColors, OnboardingShadows } from '../../src/constants/onboardingTheme';
 import PrimaryButton from '../../src/components/onboarding/PrimaryButton';
 
 export default function IntroScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -15,7 +17,7 @@ export default function IntroScreen() {
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Text style={styles.title}>NutriDz delivers{'\n'}long-term result</Text>
+        <Text style={styles.title}>{t('onboarding.introTitle')}</Text>
 
         <View style={styles.chartWrap}>
           <Svg width={300} height={220} viewBox="0 0 300 220">
@@ -60,13 +62,13 @@ export default function IntroScreen() {
         <View style={[styles.statCard, OnboardingShadows.card]}>
           <Text style={styles.statText}>
             <Text style={styles.statHighlight}>74% </Text>
-            of NutriDz users sustain weight loss over 6 months
+            {t('onboarding.introStat')}
           </Text>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton label="Next" onPress={() => router.push('/(onboarding)/goal')} />
+        <PrimaryButton label={t('common.next')} onPress={() => router.push('/(onboarding)/goal')} />
       </View>
     </SafeAreaView>
   );
@@ -95,11 +97,13 @@ const styles = StyleSheet.create({
   },
   tagText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   statCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: OnboardingColors.surface,
     borderRadius: 18,
     padding: 18,
     marginTop: 16,
     width: '100%',
+    borderWidth: 1,
+    borderColor: OnboardingColors.border,
   },
   statText: { fontSize: 15, color: OnboardingColors.text, textAlign: 'center', lineHeight: 22 },
   statHighlight: { color: OnboardingColors.success, fontWeight: '800', fontSize: 17 },

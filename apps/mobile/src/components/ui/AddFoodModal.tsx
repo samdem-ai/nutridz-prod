@@ -4,15 +4,16 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, Animated, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 import { Theme } from '../../constants/theme';
 import NutriScoreBadge from './NutriScoreBadge';
 
 const MEAL_OPTIONS = [
-  { key: 'BREAKFAST', label: 'Petit-dej', icon: 'sunny-outline' as const, color: Colors.meals.petit_dejeuner },
-  { key: 'LUNCH', label: 'Dejeuner', icon: 'restaurant-outline' as const, color: Colors.meals.dejeuner },
-  { key: 'DINNER', label: 'Diner', icon: 'moon-outline' as const, color: Colors.meals.diner },
-  { key: 'SNACK', label: 'Collation', icon: 'cafe-outline' as const, color: Colors.meals.collation },
+  { key: 'BREAKFAST', labelKey: 'journal.breakfast', icon: 'sunny-outline' as const, color: Colors.meals.petit_dejeuner },
+  { key: 'LUNCH', labelKey: 'journal.lunch', icon: 'restaurant-outline' as const, color: Colors.meals.dejeuner },
+  { key: 'DINNER', labelKey: 'journal.dinner', icon: 'moon-outline' as const, color: Colors.meals.diner },
+  { key: 'SNACK', labelKey: 'journal.snack', icon: 'cafe-outline' as const, color: Colors.meals.collation },
 ];
 
 type ServingSize = { id: number; label: string; grams: number };
@@ -50,6 +51,7 @@ export default function AddFoodModal({
   onConfirm,
   loading = false,
 }: Props) {
+  const { t } = useTranslation();
   const [quantity, setQuantity] = useState('100');
   const [multiplier, setMultiplier] = useState(1);
   const [selectedServing, setSelectedServing] = useState<ServingSize | null>(null);
@@ -80,9 +82,9 @@ export default function AddFoodModal({
 
   const servings: ServingSize[] = [
     { id: -1, label: '100g', grams: 100 },
-    { id: -2, label: 'Petite (50g)', grams: 50 },
-    { id: -3, label: 'Moyenne (150g)', grams: 150 },
-    { id: -4, label: 'Grande (250g)', grams: 250 },
+    { id: -2, label: `${t('common.small') || 'Small'} (50g)`, grams: 50 },
+    { id: -3, label: `${t('common.medium') || 'Medium'} (150g)`, grams: 150 },
+    { id: -4, label: `${t('common.large') || 'Large'} (250g)`, grams: 250 },
     ...(food.servingSizes || []),
   ];
 
@@ -123,23 +125,23 @@ export default function AddFoodModal({
                 <View style={styles.macroItem}>
                   <View style={[styles.macroDot, { backgroundColor: Colors.macros.proteines }]} />
                   <Text style={styles.macroValue}>{protein}g</Text>
-                  <Text style={styles.macroLabel}>Proteines</Text>
+                  <Text style={styles.macroLabel}>{t('journal.proteins')}</Text>
                 </View>
                 <View style={styles.macroItem}>
                   <View style={[styles.macroDot, { backgroundColor: Colors.macros.glucides }]} />
                   <Text style={styles.macroValue}>{carbs}g</Text>
-                  <Text style={styles.macroLabel}>Glucides</Text>
+                  <Text style={styles.macroLabel}>{t('journal.carbs')}</Text>
                 </View>
                 <View style={styles.macroItem}>
                   <View style={[styles.macroDot, { backgroundColor: Colors.macros.lipides }]} />
                   <Text style={styles.macroValue}>{fat}g</Text>
-                  <Text style={styles.macroLabel}>Lipides</Text>
+                  <Text style={styles.macroLabel}>{t('journal.fats')}</Text>
                 </View>
               </View>
             </View>
 
             {/* Serving size pills */}
-            <Text style={styles.sectionLabel}>Portion</Text>
+            <Text style={styles.sectionLabel}>{t('journal.portion')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.servingScroll}>
               {servings.map((s) => {
                 const isSelected = selectedServing?.id === s.id;
@@ -165,7 +167,7 @@ export default function AddFoodModal({
             {/* Custom quantity */}
             <View style={styles.quantitySection}>
               <View style={styles.quantityField}>
-                <Text style={styles.quantityFieldLabel}>Quantite (g)</Text>
+                <Text style={styles.quantityFieldLabel}>{t('journal.quantity')}</Text>
                 <TextInput
                   style={styles.quantityInput}
                   keyboardType="numeric"
@@ -202,14 +204,14 @@ export default function AddFoodModal({
             </View>
 
             <Text style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total: </Text>
+              <Text style={styles.totalLabel}>{t('journal.total')}: </Text>
               <Text style={styles.totalValue}>{totalGrams.toFixed(0)}g</Text>
             </Text>
 
             {/* Meal type picker */}
             {showMealPicker && (
               <>
-                <Text style={styles.sectionLabel}>Repas</Text>
+                <Text style={styles.sectionLabel}>{t('journal.meal')}</Text>
                 <View style={styles.mealGrid}>
                   {MEAL_OPTIONS.map((m) => {
                     const isSelected = mealType === m.key;
@@ -223,8 +225,8 @@ export default function AddFoodModal({
                         <View style={[styles.mealIconBg, { backgroundColor: m.color + (isSelected ? '40' : '15') }]}>
                           <Ionicons name={m.icon} size={20} color={m.color} />
                         </View>
-                        <Text style={[styles.mealLabel, isSelected && { color: m.color, fontWeight: Theme.fontWeight.bold }]}>
-                          {m.label}
+                        <Text style={[styles.mealLabel, isSelected && { color: m.color, fontWeight: Theme.fontWeight.bold }]} numberOfLines={1}>
+                          {t(m.labelKey)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -245,7 +247,7 @@ export default function AddFoodModal({
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={22} color="#FFF" />
-                  <Text style={styles.submitText}>Ajouter au journal</Text>
+                  <Text style={styles.submitText}>{t('journal.addToJournal')}</Text>
                 </>
               )}
             </TouchableOpacity>

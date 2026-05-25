@@ -1,49 +1,52 @@
-// Light theme used ONLY for onboarding screens. Matches design mockups.
+// Soft dark theme for onboarding. Distinct from main app theme but cohesive.
 export const OnboardingColors = {
-  bg: '#F4F1FA', // light lavender background
-  bgAlt: '#FAEFE5', // cream tint for info screen
-  bgSuccess: '#E8F5EC', // soft green for plan-ready
-  surface: '#FFFFFF',
-  surfaceElevated: '#FFFFFF',
-  border: '#E5E3EE',
+  bg: '#0F1115', // deep neutral
+  bgAlt: '#13161C', // slight elevation
+  bgSuccess: '#0F1A14', // dark green-tinted bg for success screens
+  surface: '#1A1D24', // card bg
+  surfaceElevated: '#22262F', // elevated card / pill
+  surfaceMuted: '#171A21',
+  border: 'rgba(255,255,255,0.06)',
+  borderStrong: 'rgba(255,255,255,0.10)',
 
-  text: '#27214A', // deep purple-black
-  textSecondary: '#6F6A87',
-  textMuted: '#A09BB5',
+  text: '#F4F5F8',
+  textSecondary: '#A8AEBD',
+  textMuted: '#6B7180',
 
-  primary: '#9B7BD9', // purple accent
-  primaryMuted: '#D4C5F4',
-  primaryLight: '#EDE5FB',
+  // Match main app brand (green). Was purple `#A78BFA` — unified now.
+  primary: '#22C55E',
+  primaryMuted: 'rgba(34,197,94,0.18)',
+  primaryLight: 'rgba(34,197,94,0.10)',
 
-  success: '#22C55E',
-  successMuted: '#86EFAC',
+  success: '#4ADE80',
+  successMuted: 'rgba(74,222,128,0.20)',
   warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
+  error: '#F87171',
+  info: '#60A5FA',
 
-  cta: '#1F1B2E', // dark CTA button
-  ctaText: '#FFFFFF',
+  cta: '#F4F5F8', // light CTA on dark bg
+  ctaText: '#0F1115',
 
-  ruler: '#A7A2BA',
-  rulerActive: '#9B7BD9',
+  ruler: '#3A3F4B',
+  rulerActive: '#22C55E',
 
-  trackBg: '#E8E5F0',
-  trackFill: '#22C55E',
+  trackBg: '#22262F',
+  trackFill: '#4ADE80',
 };
 
 export const OnboardingShadows = {
   card: {
-    shadowColor: '#27214A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 4,
   },
   cta: {
-    shadowColor: '#1F1B2E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
     shadowRadius: 16,
-    elevation: 6,
+    elevation: 8,
   },
 };

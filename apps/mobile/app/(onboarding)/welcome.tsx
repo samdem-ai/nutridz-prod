@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -9,11 +10,13 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingColors, OnboardingShadows } from '../../src/constants/onboardingTheme';
 import PrimaryButton from '../../src/components/onboarding/PrimaryButton';
+import BrandLogo from '../../src/components/onboarding/BrandLogo';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -23,74 +26,107 @@ interface Slide {
   illustration: 'plan' | 'nutrition' | 'analysis' | 'goals';
 }
 
-const SLIDES: Slide[] = [
-  {
-    title: 'Personalized Meal Plans',
-    subtitle: 'Offer every meal across various diets with effortless ease',
-    illustration: 'plan',
-  },
-  {
-    title: 'Track Your Nutrition',
-    subtitle: 'Input your meals to monitor calories and maintain a balanced diet',
-    illustration: 'nutrition',
-  },
-  {
-    title: 'Detailed Food Analysis',
-    subtitle: 'Get detailed nutritional breakdown of any dish with AI analysis',
-    illustration: 'analysis',
-  },
-  {
-    title: 'Achieve Your Goals',
-    subtitle: 'Monitor your weight progress and reach your health targets',
-    illustration: 'goals',
-  },
+// Slide content is built from t() keys at render time (see component).
+const SLIDE_KEYS: Array<{ titleKey: string; subKey: string; illustration: Slide['illustration'] }> = [
+  { titleKey: 'onboarding.slide1Title', subKey: 'onboarding.slide1Sub', illustration: 'plan' },
+  { titleKey: 'onboarding.slide2Title', subKey: 'onboarding.slide2Sub', illustration: 'nutrition' },
+  { titleKey: 'onboarding.slide3Title', subKey: 'onboarding.slide3Sub', illustration: 'analysis' },
+  { titleKey: 'onboarding.slide4Title', subKey: 'onboarding.slide4Sub', illustration: 'goals' },
 ];
 
 export default function WelcomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [index, setIndex] = useState(0);
+  const SLIDES = useMemo(
+    () =>
+      SLIDE_KEYS.map((s) => ({
+        title: t(s.titleKey),
+        subtitle: t(s.subKey),
+        illustration: s.illustration,
+      })),
+    [t]
+  );
   const scrollRef = useRef<ScrollView>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
     if (i !== index) setIndex(i);
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <View style={styles.logoWrap}>
+        <BrandLogo size={68} showLabel={false} />
+      </View>
       <View style={styles.dotsRow}>
-        {SLIDES.map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, i === index && styles.dotActive]}
-          />
-        ))}
+        {SLIDES.map((_, i) => {
+          const inputRange = [(i - 1) * SCREEN_W, i * SCREEN_W, (i + 1) * SCREEN_W];
+          const width = scrollX.interpolate({
+            inputRange,
+            outputRange: [8, 24, 8],
+            extrapolate: 'clamp',
+          });
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.4, 1, 0.4],
+            extrapolate: 'clamp',
+          });
+          return <Animated.View key={i} style={[styles.dot, { width, opacity }]} />;
+        })}
       </View>
 
-      <ScrollView
-        ref={scrollRef}
+      <Animated.ScrollView
+        ref={scrollRef as any}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScroll}
+        onMomentumScrollEnd={onMomentumEnd}
+        scrollEventThrottle={1}
+        decelerationRate="fast"
+        bounces={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
         style={styles.scroll}
       >
-        {SLIDES.map((slide, i) => (
-          <View key={i} style={styles.slide}>
-            <View style={styles.illustrationWrap}>
-              <Illustration kind={slide.illustration} />
+        {SLIDES.map((slide, i) => {
+          const inputRange = [(i - 1) * SCREEN_W, i * SCREEN_W, (i + 1) * SCREEN_W];
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.88, 1, 0.88],
+            extrapolate: 'clamp',
+          });
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.4, 1, 0.4],
+            extrapolate: 'clamp',
+          });
+          return (
+            <View key={i} style={styles.slide}>
+              <Animated.View
+                style={[styles.illustrationWrap, { transform: [{ scale }], opacity }]}
+              >
+                <Illustration kind={slide.illustration} />
+              </Animated.View>
+              <Animated.Text style={[styles.title, { opacity }]}>
+                {slide.title}
+              </Animated.Text>
+              <Animated.Text style={[styles.subtitle, { opacity }]}>
+                {slide.subtitle}
+              </Animated.Text>
             </View>
-            <Text style={styles.title}>{slide.title}</Text>
-            <Text style={styles.subtitle}>{slide.subtitle}</Text>
-          </View>
-        ))}
-      </ScrollView>
+          );
+        })}
+      </Animated.ScrollView>
 
       <View style={styles.footer}>
-        <PrimaryButton label="Let's Get Started" onPress={() => router.push('/(onboarding)/intro')} />
+        <PrimaryButton label={t('common.letsGetStarted')} onPress={() => router.push('/(onboarding)/intro')} />
         <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.signInRow}>
           <Text style={styles.signInText}>
-            Already have an account? <Text style={styles.signInBold}>Sign in</Text>
+            {t('common.alreadyHaveAccount')} <Text style={styles.signInBold}>{t('common.signIn')}</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -98,7 +134,7 @@ export default function WelcomeScreen() {
   );
 }
 
-function Illustration({ kind }: { kind: Slide['illustration'] }) {
+const Illustration = memo(function Illustration({ kind }: { kind: Slide['illustration'] }) {
   // Lightweight CSS-style illustration cards (no images required).
   if (kind === 'plan') {
     return (
@@ -172,7 +208,7 @@ function Illustration({ kind }: { kind: Slide['illustration'] }) {
       <Text style={styles.phoneSub}>Calorie Trends</Text>
     </View>
   );
-}
+});
 
 function MealRow({ color, name, kcal }: { color: string; name: string; kcal: number }) {
   return (
@@ -206,8 +242,8 @@ function MacroCard({
 }) {
   return (
     <View style={styles.macroCard}>
-      <View style={[styles.macroPctTag, { backgroundColor: '#27214A' }]}>
-        <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{pct}</Text>
+      <View style={[styles.macroPctTag, { backgroundColor: OnboardingColors.surfaceElevated }]}>
+        <Text style={{ color: OnboardingColors.text, fontSize: 10, fontWeight: '700' }}>{pct}</Text>
       </View>
       <Text style={[styles.macroValue, { color }]}>{value}</Text>
       <Text style={styles.macroLabel}>{label}</Text>
@@ -217,6 +253,7 @@ function MacroCard({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: OnboardingColors.bg },
+  logoWrap: { alignItems: 'center', paddingTop: 8 },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -228,9 +265,8 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: OnboardingColors.border,
+    backgroundColor: OnboardingColors.text,
   },
-  dotActive: { backgroundColor: OnboardingColors.text, width: 22 },
   scroll: { flex: 1 },
   slide: {
     width: SCREEN_W,
@@ -260,11 +296,13 @@ const styles = StyleSheet.create({
 
   // Phone illustration
   phoneFrame: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: OnboardingColors.surface,
     borderRadius: 28,
     padding: 18,
     width: SCREEN_W * 0.78,
     minHeight: 360,
+    borderWidth: 1,
+    borderColor: OnboardingColors.border,
   },
   phoneTitle: { fontSize: 18, fontWeight: '800', color: OnboardingColors.text },
   phoneSub: { fontSize: 12, color: OnboardingColors.textSecondary, marginTop: 2 },

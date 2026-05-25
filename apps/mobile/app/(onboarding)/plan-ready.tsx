@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import Svg, { Path, Circle } from 'react-native-svg';
 import PrimaryButton from '../../src/components/onboarding/PrimaryButton';
 import {
@@ -9,10 +10,14 @@ import {
   computeBmi,
   bmiCategory,
   computeDailyCalories,
+  computeMacros,
+  buildProfilePatch,
 } from '../../src/store/onboardingStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { OnboardingColors, OnboardingShadows } from '../../src/constants/onboardingTheme';
 
 export default function PlanReadyScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const {
@@ -24,7 +29,12 @@ export default function PlanReadyScreen() {
     targetWeightKg,
     activity,
     paceKgPerWeek,
+    diabetic,
+    mode,
+    setMode,
   } = useOnboardingStore();
+  const updateProfile = useAuthStore((s) => s.updateProfile);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const age = new Date().getFullYear() - birthYear;
   const bmi = +computeBmi(heightCm, currentWeightKg).toFixed(1);
@@ -36,7 +46,10 @@ export default function PlanReadyScreen() {
     : OnboardingColors.error;
 
   const dailyKcal = computeDailyCalories(sex, age, heightCm, currentWeightKg, activity, paceKgPerWeek);
-  const carbsPct = 40, fatPct = 30, proteinPct = 30;
+  const macros = computeMacros(dailyKcal, goal, diabetic, activity, currentWeightKg);
+  const carbsPct = Math.round(macros.carbsPct * 100);
+  const fatPct = Math.round(macros.fatPct * 100);
+  const proteinPct = Math.round(macros.proteinPct * 100);
 
   const diff = Math.abs(targetWeightKg - currentWeightKg);
   const weeks = paceKgPerWeek === 0 ? 12 : Math.ceil(diff / Math.abs(paceKgPerWeek));
@@ -47,114 +60,170 @@ export default function PlanReadyScreen() {
     year: 'numeric',
   });
 
-  const continueToRegister = () => {
+  const onCta = async () => {
     setLoading(true);
+    // Edit mode = user came from settings, already logged in.
+    // Push profile patch + bail back to settings/tabs. Skip register screen.
+    if (mode === 'edit' && isAuthenticated) {
+      try {
+        await updateProfile(buildProfilePatch() as any);
+      } catch (e) {
+        console.warn('updateProfile failed:', e);
+      }
+      setMode('create');
+      setLoading(false);
+      router.replace('/(tabs)');
+      return;
+    }
+    // Create mode = fresh signup
     router.replace('/(auth)/register');
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.heading}>Your custom plan is ready!</Text>
+        <Text style={styles.heading}>{t('onboarding.planReadyHeader')}</Text>
         <Text style={styles.bigHeading}>
-          {goal === 'GAIN' ? 'Reach' : goal === 'LOSE' ? 'Reach' : 'Maintain'}{' '}
+          {goal === 'MAINTAIN' ? t('onboarding.planReadyMaintain') : t('onboarding.planReadyReach')}{' '}
           <Text style={{ color: OnboardingColors.success }}>
             {targetWeightKg.toFixed(1)} kg
           </Text>
-          {'\n'}by {dateStr}
+          {'\n'}{t('onboarding.planReadyBy')} {dateStr}
         </Text>
 
         {/* Projected progress card */}
         <View style={[styles.card, OnboardingShadows.card]}>
-          <Text style={styles.cardTitle}>Projected Progress</Text>
+          <Text style={styles.cardTitle}>{t('onboarding.projectedProgress')}</Text>
           <View style={styles.chartWrap}>
-            <Svg width={290} height={140} viewBox="0 0 290 140">
-              <Path
-                d="M 20 30 C 80 30, 110 35, 150 90 S 240 110, 270 110"
-                stroke="#FCD34D"
-                strokeWidth={4}
-                fill="none"
-                strokeDasharray="0"
-              />
-              <Circle cx={20} cy={30} r={5} fill="#FCD34D" />
-              <Circle cx={150} cy={90} r={6} fill={OnboardingColors.success} />
-              <Circle cx={270} cy={110} r={5} fill={OnboardingColors.success} />
-            </Svg>
-            <View style={[styles.chartTag, { left: 0, top: 0 }]}>
-              <Text style={styles.tagText}>{currentWeightKg.toFixed(1)} kg</Text>
-            </View>
-            <View
-              style={[
-                styles.chartTag,
-                {
-                  left: 130,
-                  top: 60,
-                  backgroundColor: OnboardingColors.success,
-                },
-              ]}
-            >
-              <Text style={[styles.tagText, { color: '#fff' }]}>
-                {targetWeightKg.toFixed(1)} kg
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.chartTag,
-                {
-                  right: 0,
-                  top: 90,
-                  backgroundColor: '#E8F5EC',
-                },
-              ]}
-            >
-              <Text style={[styles.tagText, { color: OnboardingColors.success }]}>
-                Maintain goal
-              </Text>
-            </View>
+            {(() => {
+              // Curve direction = goal direction.
+              //   LOSE  → top-left to bottom-right (descending)
+              //   GAIN  → bottom-left to top-right (ascending)
+              //   MAINTAIN → flat
+              const isGain = goal === 'GAIN';
+              const isMaintain = goal === 'MAINTAIN';
+              const yStart = isMaintain ? 70 : isGain ? 110 : 30;
+              const yMid = isMaintain ? 70 : isGain ? 50 : 90;
+              const yEnd = isMaintain ? 70 : isGain ? 30 : 110;
+              const path = isMaintain
+                ? `M 20 ${yStart} L 270 ${yEnd}`
+                : isGain
+                ? `M 20 ${yStart} C 80 ${yStart}, 110 105, 150 ${yMid} S 240 ${yEnd}, 270 ${yEnd}`
+                : `M 20 ${yStart} C 80 ${yStart}, 110 35, 150 ${yMid} S 240 ${yEnd}, 270 ${yEnd}`;
+              return (
+                <>
+                  <Svg width={290} height={140} viewBox="0 0 290 140">
+                    <Path
+                      d={path}
+                      stroke="#FCD34D"
+                      strokeWidth={4}
+                      fill="none"
+                    />
+                    <Circle cx={20} cy={yStart} r={5} fill="#FCD34D" />
+                    <Circle cx={150} cy={yMid} r={6} fill={OnboardingColors.success} />
+                    <Circle cx={270} cy={yEnd} r={5} fill={OnboardingColors.success} />
+                  </Svg>
+                  <View
+                    style={[
+                      styles.chartTag,
+                      { left: 0, top: Math.max(0, yStart - 30) },
+                    ]}
+                  >
+                    <Text style={styles.tagText}>{currentWeightKg.toFixed(1)} kg</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.chartTag,
+                      {
+                        left: 130,
+                        top: Math.max(0, yMid - 30),
+                        backgroundColor: OnboardingColors.success,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.tagText, { color: '#fff' }]}>
+                      {targetWeightKg.toFixed(1)} kg
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.chartTag,
+                      {
+                        right: 0,
+                        top: Math.min(110, yEnd + 10),
+                        backgroundColor: OnboardingColors.successMuted,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.tagText, { color: OnboardingColors.success }]}>
+                      {isGain ? t('onboarding.tagLeanGain') : isMaintain ? t('onboarding.tagMaintain') : t('onboarding.tagMaintainGoal')}
+                    </Text>
+                  </View>
+                </>
+              );
+            })()}
           </View>
           <View style={styles.bullets}>
-            <Bullet text={`See the first visible results in just ${Math.max(2, Math.round(weeks / 2))} weeks`} />
-            <Bullet text={`Reach your goal by ${dateStr}`} />
-            <Bullet text="Habits will help you sustain your success" />
+            <Bullet text={t('onboarding.bulletResults', { weeks: Math.max(2, Math.round(weeks / 2)) })} />
+            <Bullet text={t('onboarding.bulletReach', { date: dateStr })} />
+            <Bullet text={t('onboarding.bulletHabits')} />
           </View>
         </View>
 
         {/* Nutrition recommendations */}
         <View style={[styles.card, OnboardingShadows.card]}>
-          <Text style={styles.cardTitle}>Nutrition Recommendations</Text>
+          <View style={styles.bmiHeader}>
+            <Text style={styles.cardTitle}>{t('onboarding.nutritionRecs')}</Text>
+            {diabetic ? (
+              <View style={[styles.bmiTag, { backgroundColor: OnboardingColors.info }]}>
+                <Text style={styles.bmiTagText}>{t('onboarding.diabetesMode')}</Text>
+              </View>
+            ) : null}
+          </View>
           <View style={styles.nutriRow}>
             <View style={styles.nutriCal}>
               <Text style={styles.nutriCalEmoji}>🔥</Text>
               <Text style={styles.nutriCalValue}>
                 {dailyKcal.toLocaleString()}
               </Text>
-              <Text style={styles.nutriCalLabel}>Calories</Text>
+              <Text style={styles.nutriCalLabel}>{t('journal.calories')}</Text>
             </View>
             <View style={styles.nutriMacros}>
-              <MacroItem pct={carbsPct} label="Carbs" color={OnboardingColors.success} emoji="🌿" />
-              <MacroItem pct={fatPct} label="Fat" color={OnboardingColors.warning} emoji="💧" />
-              <MacroItem pct={proteinPct} label="Protein" color={OnboardingColors.error} emoji="🍗" />
+              <MacroItem pct={carbsPct} grams={macros.carbsG} label={t('journal.carbs')} color={OnboardingColors.success} emoji="🌿" />
+              <MacroItem pct={fatPct} grams={macros.fatG} label={t('journal.fats')} color={OnboardingColors.warning} emoji="💧" />
+              <MacroItem pct={proteinPct} grams={macros.proteinG} label={t('journal.proteins')} color={OnboardingColors.error} emoji="🍗" />
             </View>
           </View>
+          <View style={styles.fiberRow}>
+            <Text style={styles.fiberLabel}>{t('onboarding.fiberTarget')}</Text>
+            <Text style={styles.fiberValue}>≥ {macros.fiberG} {t('onboarding.fiberPerDay')}</Text>
+          </View>
           <Text style={styles.cardDesc}>
-            Based on your needs, we calculated your daily calories and macro balance. You can always adjust them in the app.
+            {diabetic
+              ? t('onboarding.nutritionDescDiabetic')
+              : t('onboarding.nutritionDescStandard')}
           </Text>
         </View>
 
         {/* How to reach goal */}
         <View style={[styles.card, OnboardingShadows.card]}>
-          <Text style={styles.cardTitle}>How to Reach Your Goal:</Text>
-          <Tip emoji="🔥" text="Track your food — make a healthy habit!" />
-          <Tip emoji="🌿" text="Follow your daily calorie recommendation" />
-          <Tip emoji="🌈" text="Balance your carbs, proteins and fat" />
+          <Text style={styles.cardTitle}>{t('onboarding.howToReach')}</Text>
+          <Tip emoji="🔥" text={t('onboarding.tipTrack')} />
+          <Tip emoji="🌿" text={t('onboarding.tipCalories')} />
+          <Tip emoji="🥗" text={t('onboarding.tipBalance')} />
         </View>
 
         {/* BMI */}
         <View style={[styles.card, OnboardingShadows.card]}>
           <View style={styles.bmiHeader}>
-            <Text style={styles.cardTitle}>Your BMI</Text>
+            <Text style={styles.cardTitle}>{t('onboarding.yourBmi')}</Text>
             <View style={[styles.bmiTag, { backgroundColor: catColor }]}>
-              <Text style={styles.bmiTagText}>{cat}</Text>
+              <Text style={styles.bmiTagText}>
+                {cat === 'Normal' ? t('onboarding.bmiNormal')
+                  : cat === 'Underweight' ? t('onboarding.bmiUnderweight')
+                  : cat === 'Overweight' ? t('onboarding.bmiOverweight')
+                  : t('onboarding.bmiObese')}
+              </Text>
             </View>
           </View>
           <View style={styles.bmiRow}>
@@ -168,18 +237,18 @@ export default function PlanReadyScreen() {
           </View>
           <Text style={styles.cardDesc}>
             {cat === 'Normal'
-              ? "You're in a healthy range, but there's room to become even better! Focus on balanced nutrition and strength training to stay on track."
-              : 'Small daily habits will help you reach a healthier range. We will guide you step by step.'}
+              ? t('onboarding.bmiAdviceNormal')
+              : t('onboarding.bmiAdviceOver')}
           </Text>
         </View>
       </ScrollView>
       <View style={styles.footer}>
         <PrimaryButton
-          label="Let's Get Started!"
+          label={mode === 'edit' ? t('common.saveChanges') : t('common.letsGetStarted')}
           loading={loading}
-          onPress={continueToRegister}
+          onPress={onCta}
         />
-        <Text style={styles.tagline}>Your future self will thank you</Text>
+        <Text style={styles.tagline}>{t('onboarding.futureSelf')}</Text>
       </View>
     </SafeAreaView>
   );
@@ -196,7 +265,19 @@ function Bullet({ text }: { text: string }) {
   );
 }
 
-function MacroItem({ pct, label, color, emoji }: { pct: number; label: string; color: string; emoji: string }) {
+function MacroItem({
+  pct,
+  grams,
+  label,
+  color,
+  emoji,
+}: {
+  pct: number;
+  grams: number;
+  label: string;
+  color: string;
+  emoji: string;
+}) {
   return (
     <View style={styles.macroItem}>
       <View style={[styles.macroBar, { backgroundColor: color }]} />
@@ -204,6 +285,7 @@ function MacroItem({ pct, label, color, emoji }: { pct: number; label: string; c
         <Text style={{ fontSize: 12 }}>{emoji}</Text>
         <Text style={styles.macroPct}>{pct}%</Text>
       </View>
+      <Text style={styles.macroGrams}>{grams}g</Text>
       <Text style={styles.macroLabel}>{label}</Text>
     </View>
   );
@@ -229,13 +311,19 @@ const styles = StyleSheet.create({
     color: OnboardingColors.text,
     marginBottom: 6,
   },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: 18 },
+  card: {
+    backgroundColor: OnboardingColors.surface,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: OnboardingColors.border,
+  },
   cardTitle: { fontSize: 17, fontWeight: '800', color: OnboardingColors.text, marginBottom: 12 },
   cardDesc: { fontSize: 13, color: OnboardingColors.textSecondary, lineHeight: 19, marginTop: 10 },
   chartWrap: { alignItems: 'center', position: 'relative', height: 150 },
   chartTag: {
     position: 'absolute',
-    backgroundColor: '#27214A',
+    backgroundColor: OnboardingColors.surfaceElevated,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
@@ -262,7 +350,20 @@ const styles = StyleSheet.create({
   macroItem: { flex: 1, alignItems: 'center', gap: 4 },
   macroBar: { height: 8, width: '90%', borderRadius: 4 },
   macroPct: { fontSize: 13, fontWeight: '800', color: OnboardingColors.text },
-  macroLabel: { fontSize: 10, color: OnboardingColors.textSecondary },
+  macroGrams: { fontSize: 11, color: OnboardingColors.textSecondary, fontWeight: '600' },
+  macroLabel: { fontSize: 10, color: OnboardingColors.textMuted },
+  fiberRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: OnboardingColors.surfaceMuted,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 12,
+  },
+  fiberLabel: { fontSize: 13, color: OnboardingColors.text, fontWeight: '600' },
+  fiberValue: { fontSize: 13, color: OnboardingColors.success, fontWeight: '800' },
   tip: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   tipText: { flex: 1, fontSize: 13, color: OnboardingColors.text },
   bmiHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },

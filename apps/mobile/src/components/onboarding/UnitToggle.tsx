@@ -17,6 +17,7 @@ export default function UnitToggle({ options, value, onChange }: Props) {
             key={opt}
             onPress={() => onChange(opt)}
             activeOpacity={0.8}
+            delayPressIn={0}
             style={[styles.pill, active && styles.pillActive]}
           >
             <Text style={[styles.label, active && styles.labelActive]}>{opt}</Text>

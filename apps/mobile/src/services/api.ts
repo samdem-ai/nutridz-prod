@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 // Single source of truth for backend URL.
 // Override via .env (apps/mobile/.env): EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:8080/api
-const DEFAULT_DEV_URL = 'http://172.20.10.3:8080/api';
+const DEFAULT_DEV_URL = 'http://172.20.10.2:8080/api';
 const DEFAULT_PROD_URL = 'https://your-production-url.com/api';
 
 const API_BASE_URL =

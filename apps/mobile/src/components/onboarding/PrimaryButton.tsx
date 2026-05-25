@@ -20,17 +20,20 @@ export default function PrimaryButton({
   return (
     <TouchableOpacity
       activeOpacity={0.85}
+      delayPressIn={0}
       onPress={onPress}
       disabled={disabled || loading}
       style={[styles.btn, disabled && styles.disabled]}
     >
-      <View style={styles.spacer} />
-      {loading ? (
-        <ActivityIndicator color={OnboardingColors.ctaText} />
-      ) : (
-        <Text style={styles.label}>{label}</Text>
-      )}
-      <View style={styles.spacer}>
+      <View style={styles.side} />
+      <View style={styles.center}>
+        {loading ? (
+          <ActivityIndicator color={OnboardingColors.ctaText} />
+        ) : (
+          <Text style={styles.label}>{label}</Text>
+        )}
+      </View>
+      <View style={styles.side}>
         {showArrow && !loading && (
           <Ionicons name="arrow-forward" size={20} color={OnboardingColors.ctaText} />
         )}
@@ -50,12 +53,12 @@ const styles = StyleSheet.create({
     ...OnboardingShadows.cta,
   },
   disabled: { backgroundColor: '#A09BB5', shadowOpacity: 0 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   label: {
-    flex: 0,
     color: OnboardingColors.ctaText,
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
   },
-  spacer: { width: 28, alignItems: 'flex-end' },
+  side: { width: 28, alignItems: 'center', justifyContent: 'center' },
 });

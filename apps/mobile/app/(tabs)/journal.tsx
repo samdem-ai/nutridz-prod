@@ -12,6 +12,9 @@ import { Theme } from '../../src/constants/theme';
 import { useJournalDaily, useJournalSummary, useAddJournalEntry, useDeleteJournalEntry } from '../../src/hooks/useJournal';
 import { useFoodSearch } from '../../src/hooks/useFoods';
 import AddFoodModal from '../../src/components/ui/AddFoodModal';
+import MacroBowlsModal from '../../src/components/ui/MacroBowlsModal';
+import { useAuthStore } from '../../src/store/authStore';
+import { localDateStr } from '../../src/utils/date';
 
 const MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const;
 const MEAL_KEY: Record<string, string> = {
@@ -52,7 +55,7 @@ export default function JournalScreen() {
   });
   const selectedDay = 3;
 
-  const dateStr = selectedDate.toISOString().split('T')[0];
+  const dateStr = localDateStr(selectedDate);
 
   const shiftWeek = (days: number) => {
     const next = new Date(selectedDate);
@@ -85,6 +88,8 @@ export default function JournalScreen() {
 
   const [selectedFood, setSelectedFood] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBowlsModal, setShowBowlsModal] = useState(false);
+  const user = useAuthStore((s) => s.user);
 
   const openAddFood = (mealType: string) => {
     setActiveMealType(mealType);
@@ -210,8 +215,13 @@ export default function JournalScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Daily Summary */}
-        <View style={styles.summaryCard}>
+        {/* Daily Summary — tap to open bowl visualization */}
+        <TouchableOpacity
+          style={styles.summaryCard}
+          onPress={() => setShowBowlsModal(true)}
+          activeOpacity={0.85}
+          delayPressIn={0}
+        >
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={[styles.summaryValue, { color: Colors.macros.calories }]}>{Math.round(calories)}</Text>
@@ -233,7 +243,11 @@ export default function JournalScreen() {
               <Text style={styles.summaryLabel}>{t('journal.fats')}</Text>
             </View>
           </View>
-        </View>
+          <View style={styles.tapHint}>
+            <Ionicons name="water" size={12} color={Colors.textMuted} />
+            <Text style={styles.tapHintText}>{t('bowls.tapHint')}</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Meal Sections */}
         {entriesLoading ? (
@@ -380,6 +394,20 @@ export default function JournalScreen() {
         onConfirm={handleConfirmAdd}
         loading={addEntry.isPending}
       />
+
+      {/* Bowl visualization modal */}
+      <MacroBowlsModal
+        visible={showBowlsModal}
+        onClose={() => setShowBowlsModal(false)}
+        calories={calories}
+        protein={protein}
+        carbs={carbs}
+        fat={fat}
+        caloriesTarget={summary?.caloriesTarget ?? user?.dailyCalorieTarget ?? 2000}
+        proteinTarget={summary?.proteinTarget ?? user?.dailyProteinTarget ?? 150}
+        carbsTarget={summary?.carbsTarget ?? user?.dailyCarbTarget ?? 250}
+        fatTarget={summary?.fatTarget ?? user?.dailyFatTarget ?? 65}
+      />
     </View>
   );
 }
@@ -441,6 +469,21 @@ const styles = StyleSheet.create({
   dayName: { fontSize: Theme.fontSize.xs, color: Colors.textMuted, marginBottom: 4 },
   dayNumber: { fontSize: Theme.fontSize.lg, fontWeight: Theme.fontWeight.bold, color: Colors.text },
   dayTextActive: { color: '#FFFFFF' },
+  tapHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: Theme.spacing.sm,
+    paddingTop: Theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.surfaceBorder,
+  },
+  tapHintText: {
+    color: Colors.textMuted,
+    fontSize: Theme.fontSize.xs,
+    fontWeight: '600',
+  },
   summaryCard: {
     ...Theme.darkCard,
     marginBottom: Theme.spacing.lg,

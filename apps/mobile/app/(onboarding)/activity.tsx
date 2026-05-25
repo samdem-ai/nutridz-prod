@@ -1,63 +1,39 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import OnboardingHeader from '../../src/components/onboarding/OnboardingHeader';
 import OptionCard from '../../src/components/onboarding/OptionCard';
 import PrimaryButton from '../../src/components/onboarding/PrimaryButton';
 import { useOnboardingStore, Activity } from '../../src/store/onboardingStore';
 import { OnboardingColors } from '../../src/constants/onboardingTheme';
 
-const OPTIONS: { key: Activity; emoji: string; title: string; desc: string }[] = [
-  {
-    key: 'NOT_ACTIVE',
-    emoji: '🪑',
-    title: 'Not active',
-    desc: 'I quickly lose my breath climbing stairs',
-  },
-  {
-    key: 'LIGHTLY_ACTIVE',
-    emoji: '🚶',
-    title: 'Lightly active',
-    desc: 'Sometimes I do short workouts to keep myself moving',
-  },
-  {
-    key: 'MODERATELY_ACTIVE',
-    emoji: '🏃',
-    title: 'Moderately active',
-    desc: 'I maintain a regular exercise routine of 1-2 times per week',
-  },
-  {
-    key: 'HIGHLY_ACTIVE',
-    emoji: '🏋️',
-    title: 'Highly active',
-    desc: 'Fitness is a core part of my lifestyle',
-  },
+const OPTIONS: { key: Activity; emoji: string; titleKey: string; descKey: string }[] = [
+  { key: 'NOT_ACTIVE', emoji: '🪑', titleKey: 'onboarding.actNot', descKey: 'onboarding.actNotDesc' },
+  { key: 'LIGHTLY_ACTIVE', emoji: '🚶', titleKey: 'onboarding.actLight', descKey: 'onboarding.actLightDesc' },
+  { key: 'MODERATELY_ACTIVE', emoji: '🏃', titleKey: 'onboarding.actMod', descKey: 'onboarding.actModDesc' },
+  { key: 'HIGHLY_ACTIVE', emoji: '🏋️', titleKey: 'onboarding.actHigh', descKey: 'onboarding.actHighDesc' },
 ];
 
 export default function ActivityScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { activity, setActivity, goal } = useOnboardingStore();
 
-  const next = () => {
-    if (goal === 'MAINTAIN') {
-      router.push('/(onboarding)/reminders');
-    } else {
-      router.push('/(onboarding)/pace');
-    }
-  };
+  const next = () => router.push('/(onboarding)/diabetes');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <OnboardingHeader progress={7 / 9} />
+      <OnboardingHeader progress={7 / 10} />
       <View style={styles.content}>
-        <Text style={styles.title}>How active are you each week?</Text>
+        <Text style={styles.title}>{t('onboarding.activityTitle')}</Text>
         <View style={styles.options}>
           {OPTIONS.map((o) => (
             <OptionCard
               key={o.key}
               emoji={o.emoji}
-              title={o.title}
-              description={o.desc}
+              title={t(o.titleKey)}
+              description={t(o.descKey)}
               selected={activity === o.key}
               onPress={() => setActivity(o.key)}
             />
@@ -65,9 +41,9 @@ export default function ActivityScreen() {
         </View>
       </View>
       <View style={styles.footer}>
-        <PrimaryButton label="Next" disabled={!activity} onPress={next} />
+        <PrimaryButton label={t('common.next')} disabled={!activity} onPress={next} />
         <TouchableOpacity style={styles.sourceRow}>
-          <Text style={styles.sourceText}>Source of recommendations</Text>
+          <Text style={styles.sourceText}>{t('common.sourceRecommendations')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

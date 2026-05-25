@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 import { Theme } from '../../constants/theme';
 
@@ -19,12 +20,15 @@ export default function CalorieRing({
   size = 220,
   strokeWidth = 16,
 }: CalorieRingProps) {
+  const { t } = useTranslation();
   const animatedValue = useRef(new Animated.Value(0)).current;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = Math.min(consumed / Math.max(target, 1), 1);
-  const remaining = Math.max(target - consumed, 0);
-  const isOver = consumed > target;
+  const consumedInt = Math.round(consumed);
+  const targetInt = Math.round(target);
+  const progress = Math.min(consumedInt / Math.max(targetInt, 1), 1);
+  const remaining = Math.max(targetInt - consumedInt, 0);
+  const isOver = consumedInt > targetInt;
 
   useEffect(() => {
     Animated.spring(animatedValue, {
@@ -72,11 +76,15 @@ export default function CalorieRing({
         />
       </Svg>
       <View style={styles.centerText}>
-        <Text style={styles.consumedText}>{consumed}</Text>
+        <Text style={styles.consumedText}>{consumedInt}</Text>
         <Text style={styles.unitText}>kcal</Text>
-        <View style={styles.remainingPill}>
-          <Text style={[styles.remainingText, isOver && { color: Colors.error }]}>
-            {isOver ? `+${consumed - target}` : `-${remaining}`} restant
+        <View style={[styles.remainingPill, isOver && styles.remainingPillOver]}>
+          <Text style={[styles.remainingText, isOver && styles.remainingTextOver]}>
+            {isOver
+              ? `+${consumedInt - targetInt} ${t('home.exceeded')}`
+              : remaining === 0
+              ? t('home.goalReached')
+              : `${remaining} ${t('home.remaining')}`}
           </Text>
         </View>
       </View>
@@ -110,9 +118,18 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: Theme.borderRadius.full,
   },
+  remainingPillOver: {
+    backgroundColor: Colors.error + '20',
+    borderWidth: 1,
+    borderColor: Colors.error + '60',
+  },
   remainingText: {
     fontSize: Theme.fontSize.xs,
     color: Colors.textMuted,
-    fontWeight: Theme.fontWeight.medium,
+    fontWeight: Theme.fontWeight.semibold,
+  },
+  remainingTextOver: {
+    color: Colors.error,
+    fontWeight: Theme.fontWeight.bold,
   },
 });

@@ -10,6 +10,8 @@ import { Colors } from '../../src/constants/colors';
 import { Theme } from '../../src/constants/theme';
 import { useWeightHistory, useGoalsProgress, useLogWeight } from '../../src/hooks/useGoals';
 import WeightChart from '../../src/components/ui/WeightChart';
+import { localDateStr } from '../../src/utils/date';
+import { useOnboardingStore } from '../../src/store/onboardingStore';
 
 const PERIODS = [
   { key: 'week', labelKey: 'goals.weekly', days: 7 },
@@ -65,6 +67,23 @@ export default function GoalsScreen() {
 
   const motivation = getMotivation(totalChange, sortedAll.length > 0);
 
+  // Weight goal + ETA (from onboarding store)
+  const targetWeight = useOnboardingStore((s) => s.targetWeightKg);
+  const paceKg = useOnboardingStore((s) => s.paceKgPerWeek);
+  const goalDir = useOnboardingStore((s) => s.goal);
+  const hasTarget = !!latestWeight && !!targetWeight && goalDir !== 'MAINTAIN' && Math.abs(targetWeight - latestWeight) > 0.1;
+  const weightDelta = hasTarget ? targetWeight - (latestWeight as number) : 0;
+  const weightDeltaAbs = Math.abs(weightDelta);
+  const startWeightKg = startWeight ?? (latestWeight as number);
+  const totalJourneyKg = startWeightKg != null && targetWeight ? Math.abs(targetWeight - startWeightKg) : 0;
+  const completedKg = startWeightKg != null && latestWeight ? Math.abs((latestWeight as number) - startWeightKg) : 0;
+  const goalProgressPct = totalJourneyKg > 0 ? Math.min(1, completedKg / totalJourneyKg) : 0;
+  const weeksToGoal = paceKg !== 0 && weightDeltaAbs > 0 ? Math.ceil(weightDeltaAbs / Math.abs(paceKg)) : 0;
+  const etaDate = weeksToGoal > 0 ? new Date(Date.now() + weeksToGoal * 7 * 86400000) : null;
+  const etaStr = etaDate
+    ? etaDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+    : '—';
+
   const handleLogWeight = () => {
     const w = parseFloat(weight);
     if (!w || w < 20 || w > 300) {
@@ -72,7 +91,7 @@ export default function GoalsScreen() {
       return;
     }
     logWeightMutation.mutate(
-      { weightKg: w, date: new Date().toISOString().split('T')[0] },
+      { weightKg: w, date: localDateStr() },
       {
         onSuccess: () => {
           setWeight('');
@@ -105,6 +124,58 @@ export default function GoalsScreen() {
             <Text style={styles.motivationMessage}>{motivation.message}</Text>
           </View>
         </View>
+
+        {/* Weight goal + ETA */}
+        {hasTarget && (
+          <View style={styles.goalTargetCard}>
+            <View style={styles.goalTargetHeader}>
+              <View style={styles.goalTargetIconBg}>
+                <Ionicons name={goalDir === 'GAIN' ? 'trending-up' : 'trending-down'} size={18} color={Colors.primary} />
+              </View>
+              <Text style={styles.goalTargetLabel}>{t('goalsExtra.weightGoal')}</Text>
+            </View>
+
+            <View style={styles.goalTargetRow}>
+              <View style={styles.goalTargetCol}>
+                <Text style={styles.goalTargetSmall}>{t('goals.current')}</Text>
+                <Text style={styles.goalTargetValue}>{latestWeight?.toFixed(1) ?? '--'}<Text style={styles.goalTargetUnit}>kg</Text></Text>
+              </View>
+              <View style={styles.goalTargetArrow}>
+                <Ionicons name="arrow-forward" size={18} color={Colors.textMuted} />
+              </View>
+              <View style={[styles.goalTargetCol, { alignItems: 'flex-end' }]}>
+                <Text style={styles.goalTargetSmall}>{t('goalsExtra.target')}</Text>
+                <Text style={[styles.goalTargetValue, { color: Colors.primary }]}>
+                  {targetWeight.toFixed(1)}<Text style={[styles.goalTargetUnit, { color: Colors.primary }]}>kg</Text>
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.goalProgressBar}>
+              <View style={[styles.goalProgressFill, { width: `${goalProgressPct * 100}%` }]} />
+            </View>
+            <View style={styles.goalProgressMeta}>
+              <Text style={styles.goalProgressText}>
+                {Math.round(goalProgressPct * 100)}% {t('goalsExtra.complete')}
+              </Text>
+              <Text style={styles.goalProgressText}>
+                {weightDeltaAbs.toFixed(1)} kg {goalDir === 'GAIN' ? t('goalsExtra.toGain') : t('goalsExtra.toLose')}
+              </Text>
+            </View>
+
+            {etaDate && (
+              <View style={styles.goalEtaRow}>
+                <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                <Text style={styles.goalEtaLabel}>{t('goalsExtra.expectedBy')}</Text>
+                <Text style={styles.goalEtaValue}>{etaStr}</Text>
+                <Text style={styles.goalEtaWeeks}>· {weeksToGoal} {weeksToGoal === 1 ? t('goalsExtra.week') : t('goalsExtra.weeks')}</Text>
+              </View>
+            )}
+            <Text style={styles.goalPaceHint}>
+              {paceKg < 0 ? '−' : '+'}{Math.abs(paceKg).toFixed(1)} kg / {t('goalsExtra.week')}
+            </Text>
+          </View>
+        )}
 
         {/* Stats grid */}
         <View style={styles.statsGrid}>
@@ -295,6 +366,96 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.sm,
     color: Colors.textSecondary,
     lineHeight: 18,
+  },
+  goalTargetCard: {
+    ...Theme.darkCard,
+    marginBottom: Theme.spacing.lg,
+    padding: Theme.spacing.lg,
+  },
+  goalTargetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: Theme.spacing.md,
+  },
+  goalTargetIconBg: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: Colors.primaryMuted,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  goalTargetLabel: {
+    fontSize: Theme.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  goalTargetRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginBottom: Theme.spacing.md,
+  },
+  goalTargetCol: { flex: 1 },
+  goalTargetArrow: { paddingHorizontal: Theme.spacing.sm },
+  goalTargetSmall: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  goalTargetValue: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: Colors.text,
+    marginTop: 2,
+  },
+  goalTargetUnit: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textMuted,
+  },
+  goalProgressBar: {
+    height: 10,
+    backgroundColor: Colors.surfaceLight,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 6,
+  },
+  goalProgressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 999,
+  },
+  goalProgressMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Theme.spacing.md,
+  },
+  goalProgressText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+  },
+  goalEtaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.primaryMuted,
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignSelf: 'flex-start',
+  },
+  goalEtaLabel: { fontSize: 11, color: Colors.primary, fontWeight: '700' },
+  goalEtaValue: { fontSize: 13, color: Colors.primary, fontWeight: '900' },
+  goalEtaWeeks: { fontSize: 11, color: Colors.primary, fontWeight: '600' },
+  goalPaceHint: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 8,
+    fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',

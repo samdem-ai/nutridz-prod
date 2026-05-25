@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { OnboardingColors, OnboardingShadows } from '../../src/constants/onboardingTheme';
 
-const STEPS = [
-  { label: 'Analyzing your answers', delay: 0 },
-  { label: 'Defining nutrient requirements', delay: 600 },
-  { label: 'Estimating weight progress', delay: 1500 },
-  { label: 'Adjusting nutrition tips', delay: 2400 },
+const STEP_KEYS = [
+  { labelKey: 'onboarding.loadingAnalyzing', delay: 0 },
+  { labelKey: 'onboarding.loadingNutrients', delay: 600 },
+  { labelKey: 'onboarding.loadingProgress', delay: 1500 },
+  { labelKey: 'onboarding.loadingTips', delay: 2400 },
 ];
 
 const TESTIMONIALS = [
@@ -25,7 +26,12 @@ const TESTIMONIALS = [
 ];
 
 export default function LoadingScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
+  const STEPS = useMemo(
+    () => STEP_KEYS.map((s) => ({ label: t(s.labelKey), delay: s.delay })),
+    [t]
+  );
   const animations = useRef(STEPS.map(() => new Animated.Value(0))).current;
   const [doneIdx, setDoneIdx] = useState(-1);
 
@@ -56,9 +62,7 @@ export default function LoadingScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.body}>
-        <Text style={styles.title}>
-          We're setting everything{'\n'}up for you
-        </Text>
+        <Text style={styles.title}>{t('onboarding.loadingTitle')}</Text>
 
         {STEPS.map((s, i) => {
           const width = animations[i].interpolate({
@@ -126,7 +130,7 @@ const styles = StyleSheet.create({
   stepLabelActive: { color: OnboardingColors.text },
   barTrack: {
     height: 14,
-    backgroundColor: '#D7E9DD',
+    backgroundColor: OnboardingColors.trackBg,
     borderRadius: 999,
     overflow: 'hidden',
   },
@@ -140,9 +144,11 @@ const styles = StyleSheet.create({
   },
   testimonial: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: OnboardingColors.surface,
     borderRadius: 18,
     padding: 12,
+    borderWidth: 1,
+    borderColor: OnboardingColors.border,
   },
   testHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   testName: { fontSize: 13, fontWeight: '800', color: OnboardingColors.text },

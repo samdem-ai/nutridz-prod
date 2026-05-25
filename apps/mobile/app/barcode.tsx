@@ -11,8 +11,9 @@ import { Theme } from '../src/constants/theme';
 import api from '../src/services/api';
 import { useAddJournalEntry } from '../src/hooks/useJournal';
 import AddFoodModal from '../src/components/ui/AddFoodModal';
+import { localDateStr } from '../src/utils/date';
 
-const today = new Date().toISOString().split('T')[0];
+const today = localDateStr();
 
 const getCurrentMealType = () => {
   const h = new Date().getHours();

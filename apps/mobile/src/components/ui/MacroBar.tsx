@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '../../constants/colors';
 import { Theme } from '../../constants/theme';
 
@@ -19,8 +20,11 @@ export default function MacroBar({
   color,
   unit = 'g',
 }: MacroBarProps) {
+  const { t } = useTranslation();
+  const isOver = current > target;
   const progress = Math.min(current / Math.max(target, 1), 1);
   const remaining = Math.max(target - current, 0);
+  const overBy = Math.max(current - target, 0);
 
   return (
     <View style={styles.container}>
@@ -30,7 +34,7 @@ export default function MacroBar({
           <Text style={styles.label}>{label}</Text>
         </View>
         <Text style={styles.value}>
-          <Text style={{ color }}>{Math.round(current)}</Text>
+          <Text style={{ color: isOver ? Colors.error : color }}>{Math.round(current)}</Text>
           <Text style={styles.target}>/{target}{unit}</Text>
         </Text>
       </View>
@@ -38,12 +42,16 @@ export default function MacroBar({
         <View
           style={[
             styles.fill,
-            { width: `${progress * 100}%`, backgroundColor: color },
+            { width: `${progress * 100}%`, backgroundColor: isOver ? Colors.error : color },
           ]}
         />
       </View>
-      <Text style={styles.remaining}>
-        {remaining > 0 ? `${Math.round(remaining)}${unit} restant` : 'Objectif atteint!'}
+      <Text style={[styles.remaining, isOver && { color: Colors.error, fontWeight: '700' }]}>
+        {isOver
+          ? `+${Math.round(overBy)}${unit} ${t('home.exceeded')}`
+          : remaining === 0
+          ? t('home.goalReached')
+          : `${Math.round(remaining)}${unit} ${t('home.remaining')}`}
       </Text>
     </View>
   );

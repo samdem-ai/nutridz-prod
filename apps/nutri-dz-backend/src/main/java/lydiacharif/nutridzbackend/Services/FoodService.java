@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class FoodService {
 
     private final FoodRepository foodRepository;
+    private final RecipeRepository recipeRepository;
     private final JournalEntryRepository journalEntryRepository;
     private final MealLogRepository mealLogRepository;
     private final UserRepository userRepository;
@@ -152,11 +153,29 @@ public class FoodService {
         float targetFat   = orZero(user.getDailyFatTarget());
         float targetWater = orZero(user.getDailyWaterTargetMl());
 
+        // Look up food + recipe names so each entry shows its actual label
+        // instead of falling back to "Aliment" on the client.
+        Map<Long, String> foodNames = new java.util.HashMap<>();
+        Map<Long, String> recipeNames = new java.util.HashMap<>();
+        for (JournalEntry e : entries) {
+            if (e.getFoodId() != null && !foodNames.containsKey(e.getFoodId())) {
+                foodRepository.findById(e.getFoodId())
+                        .ifPresent(f -> foodNames.put(f.getId(), f.getName()));
+            }
+            if (e.getRecipeId() != null && !recipeNames.containsKey(e.getRecipeId())) {
+                recipeRepository.findById(e.getRecipeId())
+                        .ifPresent(r -> recipeNames.put(r.getId(), r.getTitle()));
+            }
+        }
+
         Map<MealType, List<JournalEntryResponse>> meals = new EnumMap<>(MealType.class);
         for (MealType type : MealType.values()) {
             List<JournalEntryResponse> mealEntries = entries.stream()
                     .filter(e -> e.getMealType() == type)
-                    .map(e -> mapToEntryResponse(e, null, null))
+                    .map(e -> mapToEntryResponse(
+                            e,
+                            e.getFoodId() != null ? foodNames.get(e.getFoodId()) : null,
+                            e.getRecipeId() != null ? recipeNames.get(e.getRecipeId()) : null))
                     .collect(Collectors.toList());
             meals.put(type, mealEntries);
         }

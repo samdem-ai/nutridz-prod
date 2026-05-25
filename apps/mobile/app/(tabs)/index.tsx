@@ -11,8 +11,9 @@ import MacroBar from '../../src/components/ui/MacroBar';
 import { useJournalSummary } from '../../src/hooks/useJournal';
 import { useHydrationDaily, useLogWater } from '../../src/hooks/useHydration';
 import { useStreak, useAchievements } from '../../src/hooks/useGamification';
+import { localDateStr } from '../../src/utils/date';
 
-const today = new Date().toISOString().split('T')[0];
+const today = localDateStr();
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -30,8 +31,8 @@ export default function HomeScreen() {
     Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
   }, []);
 
-  const caloriesCible = user?.dailyCalorieTarget || 2000;
-  const caloriesConsumed = summary?.calories || 0;
+  const caloriesCible = Math.round(user?.dailyCalorieTarget || 2000);
+  const caloriesConsumed = Math.round(summary?.calories || 0);
   const protein = summary?.protein || 0;
   const carbs = summary?.carbs || 0;
   const fat = summary?.fat || 0;
@@ -54,7 +55,7 @@ export default function HomeScreen() {
   };
 
   const tod = getTimeOfDay();
-  const remaining = Math.max(0, caloriesCible - caloriesConsumed);
+  const remaining = Math.max(0, Math.round(caloriesCible - caloriesConsumed));
   const calPercent = Math.min(100, (caloriesConsumed / caloriesCible) * 100);
 
   const getDailyInsight = () => {
@@ -164,8 +165,23 @@ export default function HomeScreen() {
               </View>
               <View style={styles.calDivider} />
               <View style={styles.calStat}>
-                <Text style={[styles.calStatValue, { color: Colors.primary }]}>{remaining}</Text>
-                <Text style={styles.calStatLabel}>{t('home.remaining')}</Text>
+                {caloriesConsumed > caloriesCible ? (
+                  <>
+                    <Text style={[styles.calStatValue, { color: Colors.error }]}>
+                      +{Math.round(caloriesConsumed - caloriesCible)}
+                    </Text>
+                    <Text style={[styles.calStatLabel, { color: Colors.error }]}>
+                      {t('home.exceeded')}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.calStatValue, { color: Colors.primary }]}>
+                      {remaining}
+                    </Text>
+                    <Text style={styles.calStatLabel}>{t('home.remaining')}</Text>
+                  </>
+                )}
               </View>
               <View style={styles.calDivider} />
               <View style={styles.calStat}>

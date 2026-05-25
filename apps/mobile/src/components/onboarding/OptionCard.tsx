@@ -13,6 +13,7 @@ export default function OptionCard({ emoji, title, description, selected, onPres
   return (
     <TouchableOpacity
       activeOpacity={0.85}
+      delayPressIn={0}
       onPress={onPress}
       style={[styles.card, selected && styles.selected, OnboardingShadows.card]}
     >
