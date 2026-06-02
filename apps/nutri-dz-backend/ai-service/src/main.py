@@ -13,10 +13,13 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
-NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "mistralai/ministral-14b-instruct-2512")
-NVIDIA_VISION_MODEL = os.getenv("NVIDIA_VISION_MODEL", "meta/llama-3.2-11b-vision-instruct")
-NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
+OPENROUTER_VISION_MODEL = os.getenv("OPENROUTER_VISION_MODEL", "google/gemini-2.5-flash-lite")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# OpenRouter best-practice headers (analytics / leaderboards)
+OPENROUTER_REFERER = os.getenv("OPENROUTER_REFERER", "https://nutridz.app")
+OPENROUTER_TITLE = os.getenv("OPENROUTER_TITLE", "NutriDz")
 
 app = FastAPI(
     title="Nutridz AI Service",
@@ -120,19 +123,19 @@ def build_user_profile_text(ctx: Optional[UserContext]) -> str:
     return "\n".join(parts) if parts else "Profil incomplet."
 
 
-async def nvidia_chat(
+async def openrouter_chat(
     messages: List[dict],
     *,
     max_tokens: int = 1024,
     temperature: float = 0.4,
     model: Optional[str] = None,
 ) -> str:
-    """Call NVIDIA NIM chat-completions endpoint (OpenAI-compatible)."""
-    if not NVIDIA_API_KEY:
-        raise RuntimeError("NVIDIA_API_KEY not configured")
+    """Call OpenRouter chat-completions endpoint (OpenAI-compatible)."""
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not configured")
 
     payload = {
-        "model": model or NVIDIA_MODEL,
+        "model": model or OPENROUTER_MODEL,
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": temperature,
@@ -142,15 +145,21 @@ async def nvidia_chat(
         "stream": False,
     }
     headers = {
-        "Authorization": f"Bearer {NVIDIA_API_KEY}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Accept": "application/json",
         "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_REFERER,
+        "X-Title": OPENROUTER_TITLE,
     }
     async with httpx.AsyncClient(timeout=60.0) as client:
-        r = await client.post(NVIDIA_URL, json=payload, headers=headers)
+        r = await client.post(OPENROUTER_URL, json=payload, headers=headers)
         r.raise_for_status()
         data = r.json()
     return data["choices"][0]["message"]["content"]
+
+
+# Back-compat alias so existing call sites work
+nvidia_chat = openrouter_chat
 
 
 SYSTEM_NUTRITIONIST = (
@@ -172,7 +181,7 @@ SYSTEM_NUTRITIONIST = (
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "nutridz-ai", "provider": "nvidia", "model": NVIDIA_MODEL}
+    return {"status": "ok", "service": "nutridz-ai", "provider": "openrouter", "model": OPENROUTER_MODEL}
 
 
 @app.post("/ai/chat")
@@ -354,7 +363,7 @@ async def _analyze_image_structured(
             ],
         },
     ]
-    raw = await nvidia_chat(messages, max_tokens=1024, temperature=0.1, model=NVIDIA_VISION_MODEL)
+    raw = await openrouter_chat(messages, max_tokens=1024, temperature=0.1, model=OPENROUTER_VISION_MODEL)
     match = re.search(r'\{[\s\S]*\}', raw)
     if not match:
         return {"detectedFoods": [], "advice": "Reponse non comprise. Reessaye."}

@@ -15,12 +15,22 @@ import { useLogWater } from '../../src/hooks/useHydration';
 import AddFoodModal from '../../src/components/ui/AddFoodModal';
 import AddWaterModal from '../../src/components/ui/AddWaterModal';
 
+// Whole-word match only — "eau" must be a token, not substring of "rouleaux".
+// French/Arabic word boundaries via regex with unicode flag.
 const WATER_KEYWORDS = ['eau', 'water', 'ماء', 'aqua', 'h2o', 'mineral', 'minérale', 'plate', 'gazeuse'];
+const WATER_REGEX = new RegExp(
+  `(^|[^\\p{L}])(${WATER_KEYWORDS.join('|')})([^\\p{L}]|$)`,
+  'iu'
+);
 
 const isWaterFood = (food: any): boolean => {
-  const name = (food?.name || '').toLowerCase();
-  const nameAr = (food?.nameAr || '').toLowerCase();
-  return WATER_KEYWORDS.some((kw) => name.includes(kw) || nameAr.includes(kw));
+  const name = (food?.name || '').trim();
+  const nameAr = (food?.nameAr || '').trim();
+  if (!name && !nameAr) return false;
+  // Bail-out: only classify as water if calories ≈ 0 (Gemini sets 0 for water).
+  // Cinnamon rolls = 350 kcal/100g → never water no matter what.
+  if (typeof food?.caloriesPer100g === 'number' && food.caloriesPer100g > 5) return false;
+  return WATER_REGEX.test(name) || WATER_REGEX.test(nameAr);
 };
 
 import { localDateStr } from '../../src/utils/date';
