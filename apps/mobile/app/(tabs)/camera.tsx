@@ -317,23 +317,37 @@ export default function CameraScreen() {
           </View>
         )}
 
-        <View style={{ height: 200 }} />
+        <View style={{ height: foods.length > 0 ? 40 : 200 }} />
       </ScrollView>
 
-      {/* Bottom controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity style={styles.galleryButton} onPress={pickImage} activeOpacity={0.7}>
-          <Ionicons name="images" size={24} color={Colors.textSecondary} />
-        </TouchableOpacity>
+      {/* Bottom controls — hidden while results are shown (avoids overlap with food cards) */}
+      {foods.length === 0 && (
+        <View style={styles.controls}>
+          <TouchableOpacity style={styles.galleryButton} onPress={pickImage} activeOpacity={0.7}>
+            <Ionicons name="images" size={24} color={Colors.textSecondary} />
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.captureButton} onPress={takePhoto} activeOpacity={0.8} disabled={loading}>
-          <View style={styles.captureRing}>
-            <View style={[styles.captureInner, loading && { backgroundColor: Colors.textMuted }]} />
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.captureButton} onPress={takePhoto} activeOpacity={0.8} disabled={loading}>
+            <View style={styles.captureRing}>
+              <View style={[styles.captureInner, loading && { backgroundColor: Colors.textMuted }]} />
+            </View>
+          </TouchableOpacity>
 
-        <View style={{ width: 48 }} />
-      </View>
+          <View style={{ width: 48 }} />
+        </View>
+      )}
+
+      {/* Compact "Scan again" CTA when results are present */}
+      {foods.length > 0 && (
+        <TouchableOpacity
+          style={styles.rescanFab}
+          onPress={resetScan}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="camera" size={18} color="#FFF" />
+          <Text style={styles.rescanFabText}>{t('camera.scanAgain')}</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Add to journal modal */}
       <AddFoodModal
@@ -592,5 +606,23 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: Colors.primary,
+  },
+  rescanFab: {
+    position: 'absolute',
+    bottom: 110,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 999,
+    ...Theme.glow.primary,
+  },
+  rescanFabText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: Theme.fontSize.sm,
   },
 });

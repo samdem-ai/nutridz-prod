@@ -260,6 +260,7 @@
     "detectedOne": "1 food detected",
     "noFoodDetected": "No food detected",
     "tryClearer": "Try a clearer photo",
+    "scanAgain": "Scan again",
     "estimatedPortion": "Estimated portion: ~{{grams}}g ({{kcal}} kcal)",
     "confidence": "{{percent}}% sure",
     "barcodeAlign": "Align the barcode within the frame",

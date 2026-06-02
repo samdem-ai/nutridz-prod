@@ -327,12 +327,12 @@ async def _analyze_image_structured(
     b64 = base64.b64encode(image_bytes).decode()
     profile = build_user_profile_text(user_ctx)
     prompt = (
-        "Identifie le ou les aliments/boissons dans cette photo.\n\n"
+        "Identifie le ou les aliments ET boissons dans cette photo.\n\n"
         "Reponds UNIQUEMENT avec ce JSON (pas de markdown, pas de texte):\n"
         "{\n"
         '  "detectedFoods": [\n'
         '    {\n'
-        '      "name": "Nom du plat en francais",\n'
+        '      "name": "Nom du plat ou de la boisson en francais",\n'
         '      "nameAr": "Nom en arabe (si applicable, sinon null)",\n'
         '      "confidence": 0.85,\n'
         '      "caloriesPer100g": 165,\n'
@@ -345,10 +345,17 @@ async def _analyze_image_structured(
         '  ],\n'
         '  "advice": "Court conseil personnalise (max 2 phrases)"\n'
         "}\n\n"
-        "Si la photo ne montre aucun aliment ni boisson (personne, paysage, objet inerte), retourne {\"detectedFoods\": [], \"advice\": \"Pas d'aliment visible. Prends une photo de ton plat.\"}.\n\n"
+        "REGLE 1 — BOISSONS (toujours verifier en premier):\n"
+        "- Verre, bouteille, carafe, mug, tasse, canette → c'est une BOISSON, pas un solide.\n"
+        "- Liquide transparent dans un verre/bouteille → \"Eau\" (nameAr: \"ماء\", 0 kcal, score A).\n"
+        "- Liquide marron/noir chaud → \"Cafe\" ou \"The\" (kcal: 2-5).\n"
+        "- Liquide jaune/orange opaque → \"Jus de fruit\" (~45 kcal).\n"
+        "- Liquide blanc → \"Lait\" (~50 kcal) ou \"L'ben\" (~40 kcal).\n"
+        "- Boisson gazeuse coloree dans canette/verre → identifie la marque si visible (Coca, Hamoud, etc.).\n"
+        "- NE JAMAIS classer une boisson comme patisserie, biscuit, ou plat solide.\n\n"
+        "REGLE 2 — Plats algeriens (couscous, chorba, chakchouka, mhajeb, tajine, bourek, dolma, hrira, arayach, makroud) UNIQUEMENT si la photo montre clairement un solide cuisine.\n\n"
+        "REGLE 3 — Si la photo ne montre aucun aliment ni boisson (personne, paysage, objet inerte), retourne {\"detectedFoods\": [], \"advice\": \"Pas d'aliment visible. Prends une photo de ton plat.\"}.\n\n"
         f"Profil utilisateur:\n{profile}\n\n"
-        "Reconnais les plats algeriens (couscous, chorba, chakchouka, mhajeb, tajine, bourek, dolma, hrira, etc.). "
-        "Pour l'eau et boissons: utilise 0 calorie si c'est de l'eau. "
         "Score nutritionnel: A=tres sain, B=sain, C=moyen, D=peu sain, E=mauvais. "
         "Donne une confidence realiste (0.5-0.95). "
         "REPONDS EN JSON UNIQUEMENT."

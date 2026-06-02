@@ -260,6 +260,7 @@
     "detectedOne": "تم اكتشاف طعام واحد",
     "noFoodDetected": "لم يتم اكتشاف أي طعام",
     "tryClearer": "جرب صورة أوضح",
+    "scanAgain": "مسح مجددًا",
     "estimatedPortion": "حصة تقديرية: ~{{grams}}غ ({{kcal}} كالوري)",
     "confidence": "تأكيد {{percent}}%",
     "barcodeAlign": "حاذِ الباركود داخل الإطار",

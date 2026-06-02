@@ -260,6 +260,7 @@
     "detectedOne": "1 aliment détecté",
     "noFoodDetected": "Aucun aliment détecté",
     "tryClearer": "Essaie avec une photo plus claire",
+    "scanAgain": "Scanner à nouveau",
     "estimatedPortion": "Portion estimée : ~{{grams}}g ({{kcal}} kcal)",
     "confidence": "{{percent}}% sûr",
     "barcodeAlign": "Aligne le code-barres dans le cadre",
