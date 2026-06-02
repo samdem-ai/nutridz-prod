@@ -247,7 +247,7 @@ export default function CameraScreen() {
             </Text>
             {foods.map((food: any, i: number) => (
               <Animated.View
-                key={food.id || i}
+                key={`${food.id ?? 'x'}-${i}`}
                 style={{
                   opacity: resultAnim,
                   transform: [{
