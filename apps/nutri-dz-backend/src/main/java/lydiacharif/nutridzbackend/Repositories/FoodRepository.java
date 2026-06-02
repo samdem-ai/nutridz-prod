@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -99,7 +100,23 @@ public class FoodRepository {
 
         List<Food> foods = new ArrayList<>();
         for (Record r : result) foods.add(mapToFood(r));
+
+        // Short queries like "Eau" otherwise substring-match "Gateau" and
+        // promote an unrelated pastry over the real food, so re-rank by how
+        // precisely each row matches the query before returning.
+        final String q = query == null ? "" : query.toLowerCase().trim();
+        foods.sort(Comparator.comparingInt(f -> matchRank(f, q)));
         return foods;
+    }
+
+    private static int matchRank(Food f, String q) {
+        String name = f.getName() != null ? f.getName().toLowerCase() : "";
+        String nameAr = f.getNameAr() != null ? f.getNameAr().toLowerCase() : "";
+        if (name.equals(q) || nameAr.equals(q)) return 0;
+        if (name.startsWith(q + " ") || name.startsWith(q + "(") || nameAr.startsWith(q + " ")) return 1;
+        if ((" " + name + " ").contains(" " + q + " ")
+                || (" " + nameAr + " ").contains(" " + q + " ")) return 2;
+        return 3;
     }
 
     public List<Food> findByCategory(FoodCategory category) {
