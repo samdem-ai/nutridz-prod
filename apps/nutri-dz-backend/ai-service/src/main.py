@@ -14,8 +14,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
-OPENROUTER_VISION_MODEL = os.getenv("OPENROUTER_VISION_MODEL", "google/gemini-2.5-flash-lite")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
+OPENROUTER_VISION_MODEL = os.getenv("OPENROUTER_VISION_MODEL", "google/gemini-2.5-flash")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 # OpenRouter best-practice headers (analytics / leaderboards)
 OPENROUTER_REFERER = os.getenv("OPENROUTER_REFERER", "https://nutridz.app")
@@ -327,13 +327,30 @@ async def _analyze_image_structured(
     b64 = base64.b64encode(image_bytes).decode()
     profile = build_user_profile_text(user_ctx)
     prompt = (
-        "Identifie le ou les aliments ET boissons dans cette photo.\n\n"
+        "ETAPE 1 — Classifie la photo dans EXACTEMENT une categorie avant tout:\n"
+        "  (A) BOISSON: liquide visible dans un verre, bouteille, carafe, mug, tasse, canette, bouteille en plastique.\n"
+        "  (B) ALIMENT SOLIDE: plat cuisine, fruit, legume, pain, viande, patisserie sur assiette ou plateau.\n"
+        "  (C) NI L'UN NI L'AUTRE: personne, paysage, objet inerte, ecran, animal.\n\n"
+        "Si (A) → applique la TABLE BOISSONS ci-dessous, ne consulte JAMAIS la liste des plats.\n"
+        "Si (B) → identifie le plat (algerien ou international).\n"
+        "Si (C) → retourne {\"detectedFoods\": [], \"advice\": \"Pas d'aliment visible. Prends une photo de ton plat.\"}\n\n"
+        "TABLE BOISSONS (utilise STRICTEMENT cette table pour les liquides):\n"
+        "- Liquide transparent/incolore dans verre ou bouteille → name: \"Eau\", nameAr: \"ماء\", 0 kcal/100g, score A.\n"
+        "- Liquide marron fonce ou noir chaud → name: \"Cafe\" (3 kcal) ou \"The\" (1 kcal), score A.\n"
+        "- Liquide jaune/orange opaque (jus) → name: \"Jus de fruit\", ~45 kcal/100g, score C.\n"
+        "- Liquide blanc opaque → name: \"Lait\" (~50 kcal) ou \"L'ben\" (~40 kcal), score B.\n"
+        "- Boisson gazeuse foncee → name: \"Coca-Cola\" ou \"Hamoud\" si visible, ~42 kcal/100g, score E.\n"
+        "- Petit-lait/yaourt liquide → name: \"L'ben\" ou \"Raib\", score B.\n"
+        "INTERDIT pour boissons: arayach, makroud, mhajeb, ou tout nom de patisserie/solide.\n\n"
+        "PLATS SOLIDES (utilise seulement si ETAPE 1 = B):\n"
+        "Plats algeriens connus: couscous, chorba, chakchouka, mhajeb, tajine, bourek, dolma, hrira, makroud, baklava, kesra, matlouh.\n"
+        "Plats internationaux: pasta, pizza, salade, riz, viande grillee, etc.\n\n"
         "Reponds UNIQUEMENT avec ce JSON (pas de markdown, pas de texte):\n"
         "{\n"
         '  "detectedFoods": [\n'
         '    {\n'
-        '      "name": "Nom du plat ou de la boisson en francais",\n'
-        '      "nameAr": "Nom en arabe (si applicable, sinon null)",\n'
+        '      "name": "Nom en francais",\n'
+        '      "nameAr": "Nom en arabe ou null",\n'
         '      "confidence": 0.85,\n'
         '      "caloriesPer100g": 165,\n'
         '      "proteinPer100g": 12,\n'
@@ -345,16 +362,6 @@ async def _analyze_image_structured(
         '  ],\n'
         '  "advice": "Court conseil personnalise (max 2 phrases)"\n'
         "}\n\n"
-        "REGLE 1 — BOISSONS (toujours verifier en premier):\n"
-        "- Verre, bouteille, carafe, mug, tasse, canette → c'est une BOISSON, pas un solide.\n"
-        "- Liquide transparent dans un verre/bouteille → \"Eau\" (nameAr: \"ماء\", 0 kcal, score A).\n"
-        "- Liquide marron/noir chaud → \"Cafe\" ou \"The\" (kcal: 2-5).\n"
-        "- Liquide jaune/orange opaque → \"Jus de fruit\" (~45 kcal).\n"
-        "- Liquide blanc → \"Lait\" (~50 kcal) ou \"L'ben\" (~40 kcal).\n"
-        "- Boisson gazeuse coloree dans canette/verre → identifie la marque si visible (Coca, Hamoud, etc.).\n"
-        "- NE JAMAIS classer une boisson comme patisserie, biscuit, ou plat solide.\n\n"
-        "REGLE 2 — Plats algeriens (couscous, chorba, chakchouka, mhajeb, tajine, bourek, dolma, hrira, arayach, makroud) UNIQUEMENT si la photo montre clairement un solide cuisine.\n\n"
-        "REGLE 3 — Si la photo ne montre aucun aliment ni boisson (personne, paysage, objet inerte), retourne {\"detectedFoods\": [], \"advice\": \"Pas d'aliment visible. Prends une photo de ton plat.\"}.\n\n"
         f"Profil utilisateur:\n{profile}\n\n"
         "Score nutritionnel: A=tres sain, B=sain, C=moyen, D=peu sain, E=mauvais. "
         "Donne une confidence realiste (0.5-0.95). "
