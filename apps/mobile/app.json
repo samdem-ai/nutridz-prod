@@ -33,6 +33,13 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d5710de3-8fc4-4ecd-a1ed-82ce2fe80e69"
+      }
+    },
+    "owner": "samdem-ai"
   }
 }
