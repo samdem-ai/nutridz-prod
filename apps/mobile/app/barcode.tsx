@@ -112,6 +112,13 @@ export default function BarcodeScreen() {
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
+        // iPhones expose a virtual back camera; at the minimum zoom factor
+        // iOS picks the ultrawide lens, which can't focus close enough on a
+        // barcode. A small zoom bump pushes past the ultrawide -> wide
+        // crossover so we get the main lens. On Android most OEM pipelines
+        // also switch off ultrawide once any zoom is applied.
+        zoom={0.2}
+        autofocus="on"
         onBarcodeScanned={scanned ? undefined : handleScan}
         barcodeScannerSettings={{
           barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'qr', 'code128', 'code39'],
@@ -176,6 +183,7 @@ export default function BarcodeScreen() {
         defaultMealType={getCurrentMealType()}
         defaultPortion={100}
         showMealPicker={true}
+        autoSelectLargestServing
         onClose={() => { setShowAddModal(false); setScanned(false); }}
         onConfirm={handleConfirmAdd}
         loading={addEntry.isPending}

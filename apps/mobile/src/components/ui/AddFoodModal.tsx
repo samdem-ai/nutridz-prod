@@ -36,6 +36,7 @@ type Props = {
   defaultMealType?: string;
   defaultPortion?: number;
   showMealPicker?: boolean;
+  autoSelectLargestServing?: boolean;
   onClose: () => void;
   onConfirm: (data: { foodId: number; quantityGrams: number; mealType: string }) => void;
   loading?: boolean;
@@ -47,6 +48,7 @@ export default function AddFoodModal({
   defaultMealType = 'LUNCH',
   defaultPortion = 100,
   showMealPicker = true,
+  autoSelectLargestServing = false,
   onClose,
   onConfirm,
   loading = false,
@@ -60,9 +62,15 @@ export default function AddFoodModal({
 
   useEffect(() => {
     if (visible) {
-      setQuantity(String(defaultPortion));
+      // For barcode scans we want the full bottle/package by default, not
+      // the 100g reference portion. If the food has user-defined servings,
+      // pick the largest one (the "Bouteille 1L" rather than the glass).
+      const picked = autoSelectLargestServing && food?.servingSizes?.length
+        ? [...food.servingSizes].sort((a, b) => b.grams - a.grams)[0]
+        : null;
+      setSelectedServing(picked);
+      setQuantity(String(picked ? picked.grams : defaultPortion));
       setMultiplier(1);
-      setSelectedServing(null);
       setMealType(defaultMealType);
       Animated.spring(slideAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 10 }).start();
     } else {
