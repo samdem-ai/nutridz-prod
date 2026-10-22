@@ -2,9 +2,9 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Single source of truth for backend URL.
-// Override via .env (apps/mobile/.env): EXPO_PUBLIC_API_BASE_URL=http://192.168.1.x:8080/api
+// Release traffic uses the production API over HTTPS.
 const DEFAULT_DEV_URL = 'http://172.20.10.2:8080/api';
-const DEFAULT_PROD_URL = 'https://your-production-url.com/api';
+const DEFAULT_PROD_URL = 'https://185.207.250.210/api';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ||
