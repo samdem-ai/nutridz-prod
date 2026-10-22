@@ -2,7 +2,7 @@
   "expo": {
     "name": "NutriDz",
     "slug": "nutridz",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "nutridz",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,7 +24,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.nutridz.app"
+      "package": "com.nutridz.app",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png",
