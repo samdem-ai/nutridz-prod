@@ -21,6 +21,13 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_REFERER = os.getenv("OPENROUTER_REFERER", "https://nutridz.app")
 OPENROUTER_TITLE = os.getenv("OPENROUTER_TITLE", "NutriDz")
 
+# ── Label OCR vision provider (Groq by default; any OpenAI-compatible API) ──
+# Groq's vision line-up changes; confirm the current id with GET {base}/models
+# (exposed as /ai/vision-models) and set VISION_MODEL accordingly.
+VISION_API_KEY = os.getenv("VISION_API_KEY", "")
+VISION_BASE_URL = os.getenv("VISION_BASE_URL", "https://api.groq.com/openai/v1")
+VISION_MODEL = os.getenv("VISION_MODEL", "qwen/qwen3.8-27b")
+
 app = FastAPI(
     title="Nutridz AI Service",
     description="AI-powered nutrition assistant — Algerian cuisine focused",
@@ -430,3 +437,149 @@ async def analyze_image_multipart(image: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Image analysis error: {e}")
         return {"detectedFoods": [], "advice": "Analyse non disponible. Reessaye avec une photo plus claire.", "error": str(e)}
+
+
+# ── Label OCR (nutrition facts table → structured per-100g) ─────────
+
+async def vision_chat(messages: List[dict], *, max_tokens: int = 800, temperature: float = 0.0) -> str:
+    """Call the configured OpenAI-compatible vision provider (Groq by default)."""
+    if not VISION_API_KEY:
+        raise RuntimeError("VISION_API_KEY not configured")
+    payload = {
+        "model": VISION_MODEL,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "stream": False,
+    }
+    headers = {
+        "Authorization": f"Bearer {VISION_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    url = VISION_BASE_URL.rstrip("/") + "/chat/completions"
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        r = await client.post(url, json=payload, headers=headers)
+        r.raise_for_status()
+        data = r.json()
+    return data["choices"][0]["message"]["content"]
+
+
+LABEL_PROMPT = (
+    "Tu lis le TABLEAU DES VALEURS NUTRITIONNELLES imprime sur l'emballage d'un produit.\n"
+    "Extrais les valeurs POUR 100 g (ou pour 100 ml si c'est une boisson).\n"
+    "Regles strictes:\n"
+    "- Utilise la colonne 'pour 100 g' / 'per 100 g' / 'لكل 100 غ'. IGNORE la colonne 'par portion'.\n"
+    "- Si seul le kJ est donne, convertis: kcal = kJ / 4.184 (arrondi).\n"
+    "- Si l'etiquette donne 'sodium' et pas 'sel': sel = sodium x 2.5.\n"
+    "- Les etiquettes peuvent etre en francais, arabe ou anglais.\n"
+    "- 'traces', 'néant', '< 0,5' => 0. La virgule decimale devient un point.\n"
+    "- Valeur absente => null. N'invente AUCUNE valeur.\n"
+    "- Lis aussi le nom du produit et la marque s'ils sont visibles sur l'image.\n"
+    "- basis = '100ml' si le tableau est pour 100 ml, sinon '100g'.\n"
+    "- isDrink = true pour une boisson.\n"
+    "Reponds UNIQUEMENT avec ce JSON, sans texte ni markdown:\n"
+    "{\n"
+    '  "found": true,\n'
+    '  "name": "nom ou null", "nameAr": "nom arabe ou null", "brand": "marque ou null",\n'
+    '  "isDrink": false, "basis": "100g",\n'
+    '  "caloriesPer100g": 0, "proteinPer100g": 0, "carbsPer100g": 0, "sugarPer100g": 0,\n'
+    '  "fatPer100g": 0, "fiberPer100g": 0, "saltPer100g": 0,\n'
+    '  "warnings": []\n'
+    "}\n"
+    "Si l'image n'est PAS un tableau nutritionnel lisible: {\"found\": false}."
+)
+
+_NUM_KEYS = [
+    "caloriesPer100g", "proteinPer100g", "carbsPer100g", "sugarPer100g",
+    "fatPer100g", "fiberPer100g", "saltPer100g",
+]
+
+
+def _coerce_num(v, lo: float, hi: float):
+    if v is None:
+        return None
+    try:
+        if isinstance(v, str):
+            v = v.replace(",", ".").strip()
+            if v == "" or v.lower() in ("null", "none", "na", "n/a"):
+                return None
+        f = float(v)
+    except (ValueError, TypeError):
+        return None
+    if f < lo or f > hi:
+        return None
+    return round(f, 2)
+
+
+async def _read_label_structured(img_bytes: bytes, mime: str) -> dict:
+    b64 = base64.b64encode(img_bytes).decode()
+    messages = [{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": LABEL_PROMPT},
+            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+        ],
+    }]
+    raw = await vision_chat(messages, max_tokens=800, temperature=0.0)
+    match = re.search(r"\{[\s\S]*\}", raw or "")
+    if not match:
+        return {"found": False}
+    try:
+        data = json_lib.loads(match.group())
+    except Exception:
+        return {"found": False}
+
+    if not data.get("found", True):
+        return {"found": False}
+
+    out: dict = {"found": True}
+    for k in _NUM_KEYS:
+        out[k] = _coerce_num(data.get(k), 0, 900 if k == "caloriesPer100g" else 100)
+    for s in ("name", "nameAr", "brand"):
+        val = data.get(s)
+        out[s] = val.strip() if isinstance(val, str) and val.strip() and val.strip().lower() != "null" else None
+    out["isDrink"] = bool(data.get("isDrink"))
+    out["basis"] = "100ml" if str(data.get("basis", "")).replace(" ", "") == "100ml" else "100g"
+    w = data.get("warnings")
+    out["warnings"] = [str(x) for x in w][:5] if isinstance(w, list) else []
+    return out
+
+
+class ReadLabelRequest(BaseModel):
+    imageBase64: str
+    mimeType: Optional[str] = "image/jpeg"
+
+
+@app.post("/ai/read-label")
+async def read_label(request: ReadLabelRequest):
+    """Read a nutrition-facts label into structured per-100g values."""
+    if not VISION_API_KEY:
+        raise HTTPException(status_code=503, detail="vision provider not configured")
+    try:
+        img = base64.b64decode(request.imageBase64)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid image data")
+    try:
+        return await _read_label_structured(img, request.mimeType or "image/jpeg")
+    except httpx.HTTPStatusError as e:
+        body = e.response.text[:300]
+        logger.error(f"read-label upstream {e.response.status_code}: {body}")
+        raise HTTPException(status_code=502, detail=f"vision upstream {e.response.status_code}")
+    except Exception as e:
+        logger.error(f"read-label failed: {e}")
+        raise HTTPException(status_code=500, detail="label read failed")
+
+
+@app.get("/ai/vision-models")
+async def vision_models():
+    """List models the configured vision provider offers (to pick VISION_MODEL)."""
+    if not VISION_API_KEY:
+        raise HTTPException(status_code=503, detail="vision provider not configured")
+    url = VISION_BASE_URL.rstrip("/") + "/models"
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.get(url, headers={"Authorization": f"Bearer {VISION_API_KEY}"})
+            r.raise_for_status()
+            return r.json()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"upstream {e.response.status_code}")
