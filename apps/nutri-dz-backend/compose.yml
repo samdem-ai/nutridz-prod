@@ -79,7 +79,7 @@ services:
       # Public URL of this API — used to build product image URLs the app loads
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
       # Comma-separated origins allowed to call the API (the admin website)
-      ADMIN_WEB_ORIGINS: ${ADMIN_WEB_ORIGINS:-http://localhost:8081}
+      ADMIN_WEB_ORIGINS: ${ADMIN_WEB_ORIGINS:-http://localhost:8082}
     depends_on:
       mysql:
         condition: service_healthy
@@ -96,7 +96,7 @@ services:
         VITE_API_BASE_URL: ${ADMIN_API_BASE_URL:-/api}
     container_name: nutridz_admin_web
     ports:
-      - "127.0.0.1:8081:80"
+      - "127.0.0.1:8082:80"
     restart: unless-stopped
 
 volumes:
