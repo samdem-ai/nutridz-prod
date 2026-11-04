@@ -1,0 +1,173 @@
+@import 'tailwindcss';
+
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+  &:where([data-theme='dark'] *) {
+    @slot;
+  }
+}
+
+:root {
+  --canvas: #f6f6f4;
+  --surface: #ffffff;
+  --surface-2: #f0f0ed;
+  --line: #e2e2de;
+  --ink: #1d1d1b;
+  --ink-2: #57574f;
+  --ink-3: #8a8a82;
+  --brand: #1a7d3e;
+  --brand-600: #156833;
+  --brand-50: #ebf4ee;
+  --brand-100: #d3e8da;
+  --brand-300: #6fc48c;
+  --accent: #c27803;
+  --danger: #c4372b;
+  --danger-50: #fbeceb;
+  --warn-50: #fdf4e3;
+  --protein: #3b6fc4;
+  --carbs: #c98a12;
+  --fat: #c4473b;
+  --fiber: #7a5bbf;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --canvas: #141414;
+    --surface: #1c1c1c;
+    --surface-2: #252525;
+    --line: #2f2f2f;
+    --ink: #ececea;
+    --ink-2: #b3b3ad;
+    --ink-3: #85857f;
+    --brand: #2e9c55;
+    --brand-600: #288a4b;
+    --brand-50: #1a2a1f;
+    --brand-100: #213727;
+    --danger-50: #351e1c;
+    --warn-50: #33291a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --canvas: #141414;
+  --surface: #1c1c1c;
+  --surface-2: #252525;
+  --line: #2f2f2f;
+  --ink: #ececea;
+  --ink-2: #b3b3ad;
+  --ink-3: #85857f;
+  --brand: #2e9c55;
+  --brand-600: #288a4b;
+  --brand-50: #1a2a1f;
+  --brand-100: #213727;
+  --danger-50: #351e1c;
+  --warn-50: #33291a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-brand: var(--brand);
+  --color-brand-600: var(--brand-600);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-300: var(--brand-300);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-danger-50: var(--danger-50);
+  --color-warn-50: var(--warn-50);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fat: var(--fat);
+  --color-fiber: var(--fiber);
+  --font-sans: 'Inter', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+html[dir='rtl'] body {
+  font-family: 'Noto Sans Arabic', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@utility card {
+  @apply rounded-lg border border-line bg-surface;
+}
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand text-white hover:bg-brand-600;
+}
+@utility btn-dark {
+  @apply btn bg-ink text-canvas hover:opacity-90;
+}
+@utility btn-soft {
+  @apply btn border border-line bg-surface text-ink hover:bg-surface-2;
+}
+@utility btn-ghost {
+  @apply btn bg-transparent text-ink-2 hover:bg-surface-2;
+}
+@utility btn-danger {
+  @apply btn border border-line bg-surface text-danger hover:bg-danger-50;
+}
+@utility input {
+  @apply min-h-11 w-full rounded-md border border-line bg-surface px-3 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-3 focus:border-brand;
+}
+@utility label {
+  @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+}
+@utility chip {
+  @apply inline-flex min-h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-[13px] font-medium text-ink-2 transition-colors whitespace-nowrap;
+}
+@utility chip-on {
+  @apply border-ink bg-ink text-canvas;
+}
+
+.scan-line {
+  animation: scan 2s ease-in-out infinite;
+}
+@keyframes scan {
+  0%,
+  100% {
+    top: 12%;
+  }
+  50% {
+    top: 85%;
+  }
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

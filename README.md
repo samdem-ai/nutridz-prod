@@ -18,6 +18,12 @@ AI-powered Algerian nutrition tracking app — Spring Boot backend + Python AI m
 - 🔔 **Smart notifications** — meal reminders, hydration nudges, streak reminder
 - 🌍 **3 languages** — French, English, Arabic (with proper RTL flip)
 
+## Admin website
+
+`apps/admin-web` is a mobile-first website for administrators to collect products:
+scan barcode/QR → photograph the nutrition label (free in-browser OCR) → review → publish to the app.
+See [`apps/admin-web/README.md`](apps/admin-web/README.md).
+
 ## Stack
 
 | Layer | Tech |
@@ -41,6 +47,7 @@ AI-powered Algerian nutrition tracking app — Spring Boot backend + Python AI m
 │   │   │   ├── store/       # Zustand stores (auth, settings)
 │   │   │   └── i18n/        # fr / en / ar translation files
 │   │   └── package.json
+│   ├── admin-web/           # Admin website: scan, OCR, review, publish products
 │   └── nutri-dz-backend/    # Spring Boot + Python AI service
 │       ├── src/main/java/   # Controllers, Services, Repositories, Models
 │       ├── src/main/resources/
