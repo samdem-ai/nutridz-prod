@@ -46,7 +46,7 @@ UPDATE users SET role = 'ADMIN' WHERE email = 'someone@example.com';
 ## Deploy
 
 The `admin-web` service in `apps/nutri-dz-backend/compose.yml` builds this site into an nginx image
-on `127.0.0.1:8081`. Behind the HTTPS proxy, route `/api/*` to the backend and everything else to the site. Settings:
+on `127.0.0.1:8082`. Behind the HTTPS proxy, route `/api/*` to the backend and everything else to the site. Settings:
 
 | Variable | Where | Example |
 |---|---|---|

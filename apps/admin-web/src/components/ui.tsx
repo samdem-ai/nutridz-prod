@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { NutriScore, SubmissionStatus } from '../lib/types';
 import { useI18n } from '../lib/i18n';
 
@@ -18,9 +19,9 @@ export function PageLoader() {
 
 export function Empty({ icon, text, action }: { icon: ReactNode; text: string; action?: ReactNode }) {
   return (
-    <div className="card flex flex-col items-center gap-3 px-6 py-12 text-center">
+    <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
       <div className="text-ink-3">{icon}</div>
-      <p className="text-sm text-ink-2">{text}</p>
+      <p className="text-[17px] text-ink-3">{text}</p>
       {action}
     </div>
   );
@@ -68,20 +69,20 @@ export function NutriScoreScale({ score }: { score: NutriScore | null }) {
 
 export function StatusBadge({ status }: { status: SubmissionStatus }) {
   const { t } = useI18n();
-  const cls =
-    status === 'PENDING'
-      ? 'bg-warn-50 text-[#a76400] dark:text-accent'
-      : status === 'APPROVED'
-        ? 'bg-brand-50 text-brand'
-        : 'bg-danger-50 text-danger';
-  return <span className={`rounded px-2 py-0.5 text-[12px] font-medium ${cls}`}>{t(`status_${status}`)}</span>;
+  const dot = status === 'PENDING' ? 'bg-[#ff9500]' : status === 'APPROVED' ? 'bg-[#34c759]' : 'bg-danger';
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[15px] text-ink-3">
+      <span className={`size-2 rounded-full ${dot}`} />
+      {t(`status_${status}`)}
+    </span>
+  );
 }
 
 export function ProductThumb({ src, alt, className = 'size-14' }: { src: string | null | undefined; alt: string; className?: string }) {
   return src ? (
-    <img src={src} alt={alt} className={`${className} shrink-0 rounded-md bg-surface-2 object-cover`} loading="lazy" />
+    <img src={src} alt={alt} className={`${className} shrink-0 rounded-lg bg-surface-2 object-cover`} loading="lazy" />
   ) : (
-    <div className={`${className} grid shrink-0 place-items-center rounded-md bg-surface-2 text-lg font-semibold text-ink-3`}>
+    <div className={`${className} grid shrink-0 place-items-center rounded-lg bg-fill text-lg font-semibold text-ink-3`}>
       {alt.slice(0, 1).toUpperCase()}
     </div>
   );
@@ -89,9 +90,37 @@ export function ProductThumb({ src, alt, className = 'size-14' }: { src: string 
 
 export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="text-sm font-semibold">{children}</h2>
+    <div className="flex items-end justify-between gap-3">
+      <h2 className="section-header">{children}</h2>
+      {action && <div className="pb-1.5 pe-4 text-[15px]">{action}</div>}
+    </div>
+  );
+}
+
+/** Large-title page header, with optional trailing action. */
+export function PageTitle({ children, action, subtitle }: { children: ReactNode; action?: ReactNode; subtitle?: ReactNode }) {
+  return (
+    <div className="mb-2 flex items-end justify-between gap-3 px-1">
+      <div className="min-w-0">
+        <h1 className="large-title">{children}</h1>
+        {subtitle && <p className="mt-0.5 text-[15px] text-ink-3">{subtitle}</p>}
+      </div>
       {action}
     </div>
   );
+}
+
+/** "‹ Back" navigation link like a UINavigationBar. */
+export function BackLink({ to, label }: { to: string; label: string }) {
+  return (
+    <Link to={to} className="link -ms-1.5 mb-2 inline-flex min-h-11 items-center gap-0.5 text-[17px]">
+      <ChevronLeft size={26} strokeWidth={2.2} className="rtl:rotate-180" />
+      {label}
+    </Link>
+  );
+}
+
+/** Chevron used at the end of tappable rows. */
+export function Chevron() {
+  return <ChevronRight size={18} className="shrink-0 text-ink-3/70 rtl:rotate-180" />;
 }

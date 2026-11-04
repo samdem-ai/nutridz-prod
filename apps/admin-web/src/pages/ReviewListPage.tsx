@@ -1,21 +1,31 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ChevronRight, Inbox, RefreshCw, Search } from 'lucide-react';
+import { Inbox, Search } from 'lucide-react';
 import { api } from '../lib/api';
 import { useI18n } from '../lib/i18n';
 import { fmt, timeAgo } from '../lib/format';
-import { Empty, NutriScoreBadge, PageLoader, ProductThumb, StatusBadge } from '../components/ui';
+import { Chevron, Empty, NutriScoreBadge, PageLoader, PageTitle, ProductThumb, Spinner } from '../components/ui';
 import type { SubmissionStatus } from '../lib/types';
 
 const TABS: SubmissionStatus[] = ['PENDING', 'APPROVED', 'REJECTED'];
+
+export function SearchField({ value, onChange, placeholder, busy }: { value: string; onChange: (v: string) => void; placeholder: string; busy?: boolean }) {
+  return (
+    <div className="relative">
+      <Search size={17} className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
+      <input className="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type="search" />
+      {busy && <Spinner size={15} className="absolute end-3 top-1/2 -translate-y-1/2 text-ink-3" />}
+    </div>
+  );
+}
 
 export function ReviewListPage() {
   const { t, lang } = useI18n();
   const [params, setParams] = useSearchParams();
   const status = (params.get('status') as SubmissionStatus) || 'PENDING';
   const [q, setQ] = useState('');
-  const [size, setSize] = useState(20);
+  const [size, setSize] = useState(25);
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['submissions', status, q, size],
@@ -24,71 +34,59 @@ export function ReviewListPage() {
   });
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-xl font-semibold lg:text-2xl">{t('reviewTitle')}</h1>
+    <div>
+      <PageTitle>{t('reviewTitle')}</PageTitle>
 
-      <div className="flex gap-5 border-b border-line" role="tablist">
-        {TABS.map((s) => (
-          <button
-            key={s}
-            role="tab"
-            aria-selected={status === s}
-            onClick={() => setParams({ status: s })}
-            className={`-mb-px min-h-10 border-b-2 text-sm font-medium ${status === s ? 'border-brand text-ink' : 'border-transparent text-ink-3 hover:text-ink'}`}
-          >
-            {t(`status_${s}`)}
-          </button>
-        ))}
+      <div className="mt-3 space-y-3">
+        <SearchField value={q} onChange={setQ} placeholder={t('search')} busy={isFetching && !isLoading} />
+        <div className="segmented" role="tablist">
+          {TABS.map((s) => (
+            <button key={s} role="tab" aria-selected={status === s} onClick={() => setParams({ status: s })} className={`segment ${status === s ? 'segment-on' : ''}`}>
+              {t(`status_${s}`)}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="relative">
-        <Search size={18} className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-ink-3" />
-        <input className="input ps-11" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('search')} type="search" />
-        {isFetching && !isLoading && <RefreshCw size={16} className="absolute end-4 top-1/2 -translate-y-1/2 animate-spin text-ink-3" />}
-      </div>
-
-      {isLoading ? (
-        <PageLoader />
-      ) : !data?.items.length ? (
-        <Empty
-          icon={<Inbox size={22} />}
-          text={status === 'PENDING' && !q ? t('emptyPending') : t('emptyList')}
-          action={status === 'PENDING' && !q ? <Link to="/scan" className="btn-primary mt-2">{t('startScanning')}</Link> : undefined}
-        />
-      ) : (
-        <>
-          <ul className="grid gap-3 lg:grid-cols-2">
-            {data.items.map((s) => (
-              <li key={s.id}>
-                <Link to={`/review/${s.id}`} className="card flex items-center gap-3.5 p-3.5 transition hover:border-brand">
-                  <ProductThumb src={s.productImage} alt={s.name} className="size-16" />
+      <div className="mt-5">
+        {isLoading ? (
+          <PageLoader />
+        ) : !data?.items.length ? (
+          <Empty
+            icon={<Inbox size={40} strokeWidth={1.4} />}
+            text={status === 'PENDING' && !q ? t('emptyPending') : t('emptyList')}
+            action={status === 'PENDING' && !q ? <Link to="/scan" className="link mt-1 text-[17px]">{t('startScanning')}</Link> : undefined}
+          />
+        ) : (
+          <>
+            <div className="group-list [--inset:80px]">
+              {data.items.map((s) => (
+                <Link key={s.id} to={`/review/${s.id}`} className="cell-tap py-2">
+                  <ProductThumb src={s.productImage} alt={s.name} className="size-12" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate font-semibold">{s.name}</p>
+                      <p className="truncate font-medium" dir="auto">{s.name}</p>
                       <NutriScoreBadge score={s.nutritionalScore} size="sm" />
                     </div>
-                    <p className="truncate text-[13px] text-ink-3">
-                      {[s.brand, s.barcode].filter(Boolean).join(' · ') || t(`cat_${s.category}`)}
+                    <p className="truncate text-[15px] text-ink-3">
+                      {[s.brand, `${fmt(s.caloriesPer100g, 0)} kcal`, s.targetFoodId ? t('updatesExisting') : null].filter(Boolean).join(' · ')}
                     </p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px]">
-                      <span className="rounded-full bg-brand-50 px-2 py-0.5 font-semibold text-brand tabular-nums">{fmt(s.caloriesPer100g, 0)} kcal</span>
-                      {s.targetFoodId && <span className="rounded-full bg-surface-2 px-2 py-0.5 font-semibold text-ink-2">{t('updatesExisting')}</span>}
-                      {status !== 'PENDING' && <StatusBadge status={s.status} />}
-                      <span className="text-ink-3">{s.submittedByName} · {timeAgo(s.createdAt, lang)}</span>
-                    </div>
+                    <p className="truncate text-[13px] text-ink-3">
+                      {s.submittedByName} · {timeAgo(s.createdAt, lang)}
+                    </p>
                   </div>
-                  <ChevronRight size={20} className="shrink-0 text-ink-3 rtl:rotate-180" />
+                  <Chevron />
                 </Link>
-              </li>
-            ))}
-          </ul>
-          {data.total > data.items.length && (
-            <button type="button" className="btn-soft w-full" onClick={() => setSize(size + 20)}>
-              {t('loadMore')} ({data.items.length}/{data.total})
-            </button>
-          )}
-        </>
-      )}
+              ))}
+            </div>
+            {data.total > data.items.length && (
+              <button type="button" className="link mx-auto mt-4 block min-h-11 text-[17px]" onClick={() => setSize(size + 25)}>
+                {t('loadMore')} ({data.items.length}/{data.total})
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

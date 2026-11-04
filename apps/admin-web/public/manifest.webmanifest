@@ -3,7 +3,7 @@
   "short_name": "NutriDz Admin",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F6F8F5",
-  "theme_color": "#1A7D3E",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
   "icons": [{ "src": "/icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }]
 }

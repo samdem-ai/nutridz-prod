@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Camera, ImagePlus, Plus, Trash2, X } from 'lucide-react';
+import { Camera, Check, ImagePlus, Minus, Plus, X } from 'lucide-react';
 import { useI18n, type TKey } from '../lib/i18n';
 import { CATEGORIES, NUTRIENT_FIELDS, type Food, type FoodCategory, type NutriScore, type NutritionFields, type ProductPayload, type Submission } from '../lib/types';
 import { compressToDataUri } from '../lib/image';
@@ -139,187 +139,169 @@ export function ProductForm({ value: f, onChange, hints = {}, errors = [], showB
 
   const err = (k: string) => errors.includes(k);
 
+  const hintText = (h: FieldHint) => (h === 'ocr' ? 'OCR' : h === 'derived' ? t('derivedFrom') : h === 'check' ? t('toCheck') : t('missing'));
+  const hintColor = (h: FieldHint) => (h === 'ocr' || h === 'derived' ? 'text-brand' : 'text-[#c27803]');
+
   return (
-    <div className="space-y-6">
+    <div>
       {/* Product photo */}
-      <section>
-        <span className="label">{t('productPhoto')}</span>
-        <div className="flex items-center gap-4">
+      <h2 className="section-header pt-2">{t('productPhoto')}</h2>
+      <div className="group-list">
+        <div className="cell py-3">
           <div className="relative">
             {f.productImage ? (
-              <img src={f.productImage} alt="" className="size-24 rounded-lg object-cover ring-1 ring-line" />
+              <img src={f.productImage} alt="" className="size-16 rounded-lg object-cover" />
             ) : (
-              <div className="grid size-24 place-items-center rounded-lg border-2 border-dashed border-line bg-surface-2 text-ink-3">
-                <ImagePlus size={28} />
+              <div className="grid size-16 place-items-center rounded-lg bg-fill text-ink-3">
+                <ImagePlus size={24} />
               </div>
             )}
             {f.productImage && (
               <button
                 type="button"
                 onClick={() => set({ productImage: null })}
-                className="absolute -end-2 -top-2 grid size-7 place-items-center rounded-full bg-ink text-canvas shadow"
+                className="absolute -end-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-ink-3 text-white"
                 aria-label={t('delete')}
               >
-                <X size={14} />
+                <X size={13} strokeWidth={3} />
               </button>
             )}
           </div>
-          <div className="flex flex-1 flex-col gap-2">
-            <p className="text-[13px] text-ink-3">{t('productPhotoHint')}</p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn-soft min-h-10 px-4 text-sm" onClick={() => cameraRef.current?.click()}>
-                <Camera size={16} /> {t('takePhoto')}
-              </button>
-              <button type="button" className="btn-ghost min-h-10 px-4 text-sm" onClick={() => fileRef.current?.click()}>
-                {t('choosePhoto')}
-              </button>
-            </div>
+          <div className="flex flex-1 flex-col items-start gap-1">
+            <button type="button" className="link inline-flex items-center gap-1.5" onClick={() => cameraRef.current?.click()}>
+              <Camera size={18} /> {t('takePhoto')}
+            </button>
+            <button type="button" className="link" onClick={() => fileRef.current?.click()}>
+              {t('choosePhoto')}
+            </button>
           </div>
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onPhoto(e.target.files?.[0])} />
         </div>
-      </section>
+      </div>
+      <p className="section-footer">{t('productPhotoHint')}</p>
 
       {/* Identity */}
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
-          <label className="label" htmlFor="name">
-            {t('name')} <span className="text-danger">*</span>
-          </label>
-          <input id="name" className={`input ${err('name') ? '!border-danger' : ''}`} value={f.name} onChange={(e) => set({ name: e.target.value })} placeholder="Selecto 1L" autoComplete="off" />
-        </div>
-        <div>
-          <label className="label" htmlFor="nameAr">{t('nameAr')}</label>
-          <input id="nameAr" className="input" dir="rtl" value={f.nameAr} onChange={(e) => set({ nameAr: e.target.value })} placeholder="سيليكتو" autoComplete="off" />
-        </div>
-        <div>
-          <label className="label" htmlFor="brand">{t('brand')}</label>
-          <input id="brand" className="input" value={f.brand} onChange={(e) => set({ brand: e.target.value })} placeholder="Hamoud Boualem" autoComplete="off" />
-        </div>
+      <h2 className="section-header">{t('identity')}</h2>
+      <div className="group-list">
+        <label className="cell">
+          <span className={`w-32 shrink-0 ${err('name') ? 'text-danger' : ''}`}>{t('name')}</span>
+          <input id="name" className="field" value={f.name} onChange={(e) => set({ name: e.target.value })} placeholder={t('required')} autoComplete="off" dir="auto" />
+        </label>
+        <label className="cell">
+          <span className="w-32 shrink-0">{t('nameAr')}</span>
+          <input id="nameAr" className="field" dir="rtl" value={f.nameAr} onChange={(e) => set({ nameAr: e.target.value })} placeholder="سيليكتو" autoComplete="off" />
+        </label>
+        <label className="cell">
+          <span className="w-32 shrink-0">{t('brand')}</span>
+          <input id="brand" className="field" value={f.brand} onChange={(e) => set({ brand: e.target.value })} placeholder="Hamoud Boualem" autoComplete="off" />
+        </label>
         {showBarcode && (
-          <div className="sm:col-span-2">
-            <label className="label" htmlFor="barcode">{t('barcode')}</label>
-            <input id="barcode" className="input font-mono tracking-wider" inputMode="numeric" value={f.barcode} onChange={(e) => set({ barcode: e.target.value })} autoComplete="off" />
-          </div>
+          <label className="cell">
+            <span className="w-32 shrink-0">{t('barcode')}</span>
+            <input id="barcode" className="field font-mono" inputMode="numeric" value={f.barcode} onChange={(e) => set({ barcode: e.target.value })} placeholder="—" autoComplete="off" />
+          </label>
         )}
-      </section>
+      </div>
 
       {/* Category */}
-      <section>
-        <span className="label">{t('category')}</span>
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <button key={c} type="button" onClick={() => set({ category: c })} className={`chip ${f.category === c ? 'chip-on' : ''}`} aria-pressed={f.category === c}>
-              {t(`cat_${c}`)}
-            </button>
-          ))}
-          <button type="button" onClick={() => set({ isDrink: !f.isDrink })} className={`chip ${f.isDrink ? 'chip-on' : ''}`} aria-pressed={f.isDrink}>
-            {t('isDrink')}
+      <h2 className="section-header">{t('category')}</h2>
+      <div className="group-list">
+        {CATEGORIES.map((c) => (
+          <button key={c} type="button" onClick={() => set({ category: c })} className="cell-tap" aria-pressed={f.category === c}>
+            <span className="flex-1">{t(`cat_${c}`)}</span>
+            {f.category === c && <Check size={20} strokeWidth={2.5} className="text-brand" />}
           </button>
-        </div>
-      </section>
+        ))}
+        <label className="cell">
+          <span className="flex-1">{t('isDrink')}</span>
+          <input type="checkbox" className="switch" checked={f.isDrink} onChange={(e) => set({ isDrink: e.target.checked })} />
+        </label>
+      </div>
 
       {/* Nutrition */}
-      <section>
-        <div className="mb-2 flex items-baseline justify-between">
-          <span className="label mb-0">{t('nutrition')}</span>
-          <span className="text-[12px] font-semibold text-ink-3">{f.isDrink ? t('per100ml') : t('per100g')}</span>
-        </div>
-        <div className="divide-y divide-line overflow-hidden rounded-md border border-line bg-surface">
-          {NUTRIENT_FIELDS.map(({ key, unit }) => {
-            const hint = hints[key];
-            const bad = err(key);
-            return (
-              <label
-                key={key}
-                className={`flex min-h-14 items-center gap-2 px-4 py-1.5 sm:gap-3 ${bad ? 'bg-danger-50' : hint === 'missing' || hint === 'check' ? 'bg-warn-50' : hint ? 'bg-brand-50/60' : ''}`}
-              >
-                <span className={`flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px] ${key === 'sugarPer100g' ? 'ps-3 text-ink-2' : 'font-medium'}`}>
-                  <span>
-                    {t(key as TKey)}
-                    {key === 'caloriesPer100g' && <span className="text-danger"> *</span>}
-                  </span>
-                  {hint && (
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        hint === 'missing' || hint === 'check' ? 'bg-accent/20 text-[#a76400] dark:text-accent' : 'bg-brand-100 text-brand'
-                      }`}
-                    >
-                      {hint === 'ocr' ? 'OCR' : hint === 'derived' ? t('derivedFrom') : hint === 'check' ? t('toCheck') : t('missing')}
-                    </span>
-                  )}
-                </span>
-                <input
-                  className="w-20 shrink-0 rounded-md border sm:w-24 border-line bg-surface px-2.5 py-1.5 text-end text-[16px] tabular-nums outline-none focus:border-brand"
-                  inputMode="decimal"
-                  value={f.nutrients[key]}
-                  onChange={(e) => setNutrient(key, e.target.value.replace(/[^\d.,]/g, ''))}
-                  placeholder="—"
-                  aria-invalid={bad}
-                />
-                <span className="w-8 shrink-0 text-[13px] text-ink-3">{unit}</span>
-              </label>
-            );
-          })}
-        </div>
-      </section>
+      <h2 className="section-header">
+        {t('nutrition')} · {f.isDrink ? t('per100ml') : t('per100g')}
+      </h2>
+      <div className="group-list">
+        {NUTRIENT_FIELDS.map(({ key, unit }) => {
+          const hint = hints[key];
+          const bad = err(key);
+          return (
+            <label key={key} className={`cell ${key === 'sugarPer100g' ? 'ps-8' : ''}`}>
+              <span className="min-w-0 flex-1">
+                <span className={`block ${bad ? 'text-danger' : key === 'sugarPer100g' ? 'text-ink-3' : ''}`}>{t(key as TKey)}</span>
+                {hint && <span className={`block text-[12px] ${hintColor(hint)}`}>{hintText(hint)}</span>}
+              </span>
+              <input
+                className="field w-24 flex-none tabular-nums"
+                inputMode="decimal"
+                value={f.nutrients[key]}
+                onChange={(e) => setNutrient(key, e.target.value.replace(/[^\d.,]/g, ''))}
+                placeholder={key === 'caloriesPer100g' ? t('required') : '—'}
+                aria-invalid={bad}
+              />
+              <span className="w-9 shrink-0 text-ink-3">{unit}</span>
+            </label>
+          );
+        })}
+      </div>
 
       {/* Nutri-Score */}
-      <section>
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <span className="label mb-0">{t('nutriScore')}</span>
-          {suggestion && suggestion !== f.nutritionalScore && (
-            <button type="button" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand" onClick={() => set({ nutritionalScore: suggestion })}>
-              {t('suggested')} : <NutriScoreBadge score={suggestion} size="sm" />
-            </button>
-          )}
-        </div>
-        <div className="flex gap-2">
+      <h2 className="section-header">{t('nutriScore')}</h2>
+      <div className="group-list">
+        <div className="cell justify-between py-3">
           {(['A', 'B', 'C', 'D', 'E'] as NutriScore[]).map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => set({ nutritionalScore: f.nutritionalScore === s ? null : s })}
-              className={`grid flex-1 place-items-center rounded-md border py-2 transition ${f.nutritionalScore === s ? 'border-ink bg-surface-2' : 'border-line opacity-60'}`}
+              className={`rounded-xl p-1 ${f.nutritionalScore === s ? 'ring-2 ring-ink' : f.nutritionalScore ? 'opacity-35' : ''}`}
               aria-pressed={f.nutritionalScore === s}
             >
-              <NutriScoreBadge score={s} />
+              <NutriScoreBadge score={s} size="lg" />
             </button>
           ))}
         </div>
-      </section>
+        {suggestion && suggestion !== f.nutritionalScore && (
+          <button type="button" className="cell-tap text-brand" onClick={() => set({ nutritionalScore: suggestion })}>
+            <span className="flex-1">{t('suggested')}</span>
+            <NutriScoreBadge score={suggestion} size="sm" />
+          </button>
+        )}
+      </div>
 
       {/* Serving sizes */}
-      <section>
-        <span className="label">{t('servingSizes')}</span>
-        <div className="space-y-2">
-          {f.servingSizes.map((s, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                className="input flex-1"
-                value={s.label}
-                placeholder={t('servingLabel')}
-                onChange={(e) => set({ servingSizes: f.servingSizes.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })}
-              />
-              <div className="relative w-28">
-                <input
-                  className="input pe-8 text-end tabular-nums"
-                  inputMode="decimal"
-                  value={s.grams}
-                  onChange={(e) => set({ servingSizes: f.servingSizes.map((x, j) => (j === i ? { ...x, grams: e.target.value.replace(/[^\d.,]/g, '') } : x)) })}
-                />
-                <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-sm text-ink-3">{t('grams')}</span>
-              </div>
-              <button type="button" className="grid size-12 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-danger-50 hover:text-danger" onClick={() => set({ servingSizes: f.servingSizes.filter((_, j) => j !== i) })} aria-label={t('delete')}>
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))}
-          <button type="button" className="btn-ghost min-h-11 w-full border border-dashed border-line text-sm" onClick={() => set({ servingSizes: [...f.servingSizes, { label: '', grams: '' }] })}>
-            <Plus size={16} /> {t('addServing')}
-          </button>
-        </div>
-      </section>
+      <h2 className="section-header">{t('servingSizes')}</h2>
+      <div className="group-list">
+        {f.servingSizes.map((s, i) => (
+          <div key={i} className="cell">
+            <button type="button" className="grid size-6 shrink-0 place-items-center rounded-full bg-danger text-white" onClick={() => set({ servingSizes: f.servingSizes.filter((_, j) => j !== i) })} aria-label={t('delete')}>
+              <Minus size={14} strokeWidth={3} />
+            </button>
+            <input
+              className="field text-start"
+              value={s.label}
+              placeholder={t('servingLabel')}
+              onChange={(e) => set({ servingSizes: f.servingSizes.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })}
+            />
+            <input
+              className="field w-16 flex-none tabular-nums"
+              inputMode="decimal"
+              value={s.grams}
+              placeholder="0"
+              onChange={(e) => set({ servingSizes: f.servingSizes.map((x, j) => (j === i ? { ...x, grams: e.target.value.replace(/[^\d.,]/g, '') } : x)) })}
+            />
+            <span className="w-4 shrink-0 text-ink-3">{t('grams')}</span>
+          </div>
+        ))}
+        <button type="button" className="cell-tap text-brand" onClick={() => set({ servingSizes: [...f.servingSizes, { label: '', grams: '' }] })}>
+          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#34c759] text-white">
+            <Plus size={14} strokeWidth={3} />
+          </span>
+          {t('addServing')}
+        </button>
+      </div>
     </div>
   );
 }

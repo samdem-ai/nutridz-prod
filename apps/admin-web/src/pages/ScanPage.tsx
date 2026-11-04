@@ -65,18 +65,15 @@ export function ScanPage() {
 
   return (
     <div ref={topRef} className="mx-auto max-w-2xl scroll-mt-20">
-      {/* Stepper */}
-      <ol className="mb-6 flex items-center gap-2">
-        {steps.map((label, i) => (
-          <li key={label} className="flex flex-1 flex-col gap-1.5">
-            <div className={`h-1 rounded-full ${i <= step ? 'bg-brand' : 'bg-line'}`} />
-            <span className={`text-[12px] font-semibold ${i === step ? 'text-ink' : 'text-ink-3'}`}>
-              {i < step ? <Check size={12} className="me-1 inline" /> : `${i + 1}. `}
-              {label}
-            </span>
-          </li>
-        ))}
-      </ol>
+      {/* Step indicator */}
+      <div className="mb-1 flex items-center gap-3 px-1">
+        <span className="text-[13px] uppercase text-ink-3">{t('stepOf', { n: step + 1 })} · {steps[step]}</span>
+        <span className="flex flex-1 gap-1">
+          {steps.map((label, i) => (
+            <span key={label} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-brand' : 'bg-fill'}`} />
+          ))}
+        </span>
+      </div>
 
       {step === 0 && (
         <CodeStep
@@ -128,11 +125,9 @@ export function ScanPage() {
 
       {step === 2 && (
         <section className="">
-          <h1 className="mb-1 text-xl font-semibold">{t('step3')}</h1>
-          {check?.existingFood && <p className="mb-4 text-sm font-semibold text-brand">{t('alreadyInAppHint')}</p>}
-          <div className="card mt-4 p-5">
-            <ProductForm value={form} onChange={(f) => { setForm(f); if (errors.length) setErrors(validateForm(f)); }} hints={hints} errors={errors} />
-          </div>
+          <h1 className="large-title px-1">{t('step3')}</h1>
+          {check?.existingFood && <p className="mt-1 px-1 text-[15px] text-ink-3">{t('alreadyInAppHint')}</p>}
+          <ProductForm value={form} onChange={(f) => { setForm(f); if (errors.length) setErrors(validateForm(f)); }} hints={hints} errors={errors} />
           <StickyActions>
             <button type="button" className="btn-soft" onClick={() => go(1)}>
               <ArrowLeft size={18} className="rtl:rotate-180" /> {t('back')}
@@ -169,7 +164,7 @@ export function ScanPage() {
 
 function StickyActions({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sticky bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 -mx-4 mt-6 flex gap-3 bg-gradient-to-t from-canvas via-canvas to-transparent px-4 pb-2 pt-6 lg:bottom-0 lg:mx-0 lg:px-0">
+    <div className="sticky bottom-[calc(56px+env(safe-area-inset-bottom))] z-20 -mx-4 mt-6 flex gap-3 bg-canvas/95 px-4 pb-3 pt-3 backdrop-blur-xl lg:bottom-0 lg:mx-0 lg:px-0">
       {children}
     </div>
   );
@@ -210,73 +205,85 @@ function CodeStep({
 
   return (
     <section className="">
-      <h1 className="text-xl font-semibold">{t('scanCodeTitle')}</h1>
-      <p className="mb-5 mt-1 text-ink-2">{t('scanCodeHint')}</p>
+      <h1 className="large-title px-1">{t('scanCodeTitle')}</h1>
+      <p className="mb-5 mt-1 px-1 text-[15px] text-ink-3">{t('scanCodeHint')}</p>
 
       {!hasCode && !checking && (
         <>
           {!manual && <BarcodeScanner onResult={handle} />}
           {manual && (
             <form
-              className="card flex flex-col gap-3 p-5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (manualCode.trim()) handle({ code: manualCode.trim(), format: 'MANUAL' });
               }}
             >
-              <label className="label" htmlFor="manual">{t('manualCode')}</label>
-              <input id="manual" autoFocus className="input font-mono text-lg tracking-widest" inputMode="numeric" value={manualCode} onChange={(e) => setManualCode(e.target.value)} placeholder="6130000000000" />
-              <button className="btn-primary" type="submit" disabled={!manualCode.trim()}>{t('useCode')}</button>
+              <div className="group-list">
+                <label className="cell">
+                  <span className="shrink-0">{t('manualCode')}</span>
+                  <input id="manual" autoFocus className="field font-mono" inputMode="numeric" value={manualCode} onChange={(e) => setManualCode(e.target.value)} placeholder="6130000000000" />
+                </label>
+              </div>
+              <button className="btn-primary mt-4 w-full" type="submit" disabled={!manualCode.trim()}>{t('useCode')}</button>
             </form>
           )}
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button type="button" className="btn-soft" onClick={() => setManual(!manual)}>
-              {manual ? <QrCode size={18} /> : <Keyboard size={18} />} {manual ? t('scanAgain') : t('enterManually')}
+          <div className="group-list mt-5 [--inset:52px]">
+            <button type="button" className="cell-tap text-brand" onClick={() => setManual(!manual)}>
+              {manual ? <QrCode size={20} /> : <Keyboard size={20} />}
+              <span className="flex-1">{manual ? t('scanAgain') : t('enterManually')}</span>
             </button>
-            <button type="button" className="btn-ghost border border-line" onClick={onNext}>
-              {t('noBarcode')}
+            <button type="button" className="cell-tap text-brand" onClick={onNext}>
+              <ArrowRight size={20} className="rtl:rotate-180" />
+              <span className="flex-1">{t('noBarcode')}</span>
             </button>
           </div>
         </>
       )}
 
       {checking && (
-        <div className="card flex items-center justify-center gap-3 p-10 font-semibold text-ink-2">
+        <div className="flex items-center justify-center gap-3 py-16 text-ink-3">
           <Spinner /> {t('checking')}
         </div>
       )}
 
       {hasCode && !checking && (
-        <div className="space-y-4">
-          <div className="card flex items-center gap-4 p-5">
-            <Check size={22} className="shrink-0 text-brand" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold text-ink-3">{t('codeDetected')} · {form.codeFormat.replace('_', '-')}</p>
-              <p className="truncate font-mono text-xl font-semibold tracking-wider">{form.barcode}</p>
+        <div>
+          <div className="group-list">
+            <div className="cell py-3">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#34c759] text-white">
+                <Check size={18} strokeWidth={3} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-[19px]">{form.barcode}</p>
+                <p className="text-[13px] text-ink-3">{t('codeDetected')} · {form.codeFormat.replace('_', '-')}</p>
+              </div>
+              <button type="button" className="link grid size-10 place-items-center" onClick={onClear} aria-label={t('scanAgain')}>
+                <RefreshCw size={20} />
+              </button>
             </div>
-            <button type="button" className="btn-ghost min-h-10 px-3" onClick={onClear} aria-label={t('scanAgain')}>
-              <RefreshCw size={18} />
-            </button>
+            {check?.pendingSubmissionId ? (
+              <Link to={`/review/${check.pendingSubmissionId}`} className="cell-tap">
+                <AlertTriangle size={20} className="shrink-0 text-[#ff9500]" />
+                <span className="flex-1">{t('alreadyPending')}</span>
+                <span className="text-brand">{t('openPending')}</span>
+              </Link>
+            ) : check?.existingFood ? (
+              <div className="cell">
+                <PackageCheck size={20} className="shrink-0 text-brand" />
+                <div className="min-w-0 flex-1">
+                  <p>{t('alreadyInApp')}</p>
+                  <p className="truncate text-[15px] text-ink-3">{check.existingFood.name}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="cell text-ink-3">{t('newProduct')}</div>
+            )}
           </div>
-
-          {check?.pendingSubmissionId ? (
-            <div className="rounded-lg border border-accent/40 bg-warn-50 p-5">
-              <p className="flex items-center gap-2 font-semibold"><AlertTriangle size={18} className="text-accent" /> {t('alreadyPending')}</p>
-              <Link to={`/review/${check.pendingSubmissionId}`} className="btn-dark mt-4 w-full">{t('openPending')}</Link>
-            </div>
-          ) : check?.existingFood ? (
-            <div className="rounded-lg border border-brand/30 bg-brand-50 p-5">
-              <p className="flex items-center gap-2 font-semibold text-brand"><PackageCheck size={18} /> {t('alreadyInApp')}</p>
-              <p className="mt-1 font-semibold">{check.existingFood.name}</p>
-              <p className="mt-1 text-sm text-ink-2">{t('alreadyInAppHint')}</p>
-            </div>
-          ) : (
-            <p className="rounded-md bg-surface-2 px-4 py-3 text-sm font-semibold text-ink-2">{t('newProduct')}</p>
-          )}
+          {check?.existingFood && !check.pendingSubmissionId && <p className="section-footer">{t('alreadyInAppHint')}</p>}
 
           {!check?.pendingSubmissionId && (
-            <button type="button" className="btn-primary w-full" onClick={onNext}>
-              {t('continue')} <ArrowRight size={18} className="rtl:rotate-180" />
+            <button type="button" className="btn-primary mt-6 w-full" onClick={onNext}>
+              {t('continue')}
             </button>
           )}
         </div>
@@ -333,8 +340,8 @@ function LabelStep({
 
   return (
     <section className="">
-      <h1 className="text-xl font-semibold">{t('labelTitle')}</h1>
-      <p className="mb-5 mt-1 text-ink-2">{t('labelHint')}</p>
+      <h1 className="large-title px-1">{t('labelTitle')}</h1>
+      <p className="mb-5 mt-1 px-1 text-[15px] text-ink-3">{t('labelHint')}</p>
 
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e.target.files?.[0])} />
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
@@ -472,7 +479,7 @@ function PreviewStep({
 
   return (
     <section className="">
-      <h1 className="text-xl font-semibold">{t('previewTitle')}</h1>
+      <h1 className="large-title px-1">{t('previewTitle')}</h1>
       <p className="mb-6 mt-1 text-ink-2">{t('previewHint')}</p>
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <AppPreview

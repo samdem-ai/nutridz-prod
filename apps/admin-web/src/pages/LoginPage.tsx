@@ -32,40 +32,35 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-dvh">
-      <div className="bg-chrome px-4 pb-24 pt-5 text-chrome-ink">
-        <div className="mx-auto flex max-w-sm items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <img src="/icon.png" alt="" className="size-8 rounded-md" />
-            <span className="font-semibold">NutriDz <span className="font-normal text-white/65">Admin</span></span>
-          </div>
-          <LangSwitch onChrome />
-        </div>
+    <div className="mx-auto flex min-h-dvh max-w-sm flex-col px-4 pb-8 pt-[max(env(safe-area-inset-top),48px)]">
+      <div className="flex flex-col items-center text-center">
+        <img src="/icon.png" alt="" className="size-20 rounded-[22%] shadow-[0_1px_3px_rgba(0,0,0,0.12)]" />
+        <h1 className="mt-4 text-[28px] font-bold tracking-tight">NutriDz Admin</h1>
+        <p className="mt-1 text-[15px] text-ink-3">{t('loginSubtitle')}</p>
       </div>
-      <div className="-mt-16 px-4 pb-10">
-        <form onSubmit={submit} className="card mx-auto max-w-sm space-y-4 p-6">
-          <div>
-            <h1 className="text-lg font-semibold">{t('loginTitle')}</h1>
-            <p className="mt-1 text-sm text-ink-2">{t('loginSubtitle')}</p>
-          </div>
-          <div>
-            <label className="label" htmlFor="email">{t('email')}</label>
-            <input id="email" type="email" className="input" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label className="label" htmlFor="password">{t('password')}</label>
-            <div className="relative">
-              <input id="password" type={show ? 'text' : 'password'} className="input pe-11" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              <button type="button" onClick={() => setShow(!show)} className="absolute end-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-md text-ink-3" aria-label="Show password">
-                {show ? <EyeOff size={17} /> : <Eye size={17} />}
-              </button>
-            </div>
-          </div>
-          {error && <p className="rounded-md bg-danger-50 px-3 py-2.5 text-sm text-danger" role="alert">{error}</p>}
-          <button type="submit" className="btn-primary w-full" disabled={busy}>
-            {busy && <Spinner size={16} />} {t('signIn')}
-          </button>
-        </form>
+
+      <form onSubmit={submit} className="mt-8">
+        <div className="group-list">
+          <label className="cell">
+            <span className="w-28 shrink-0">{t('email')}</span>
+            <input type="email" className="field text-start" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nom@exemple.dz" />
+          </label>
+          <label className="cell">
+            <span className="w-28 shrink-0">{t('password')}</span>
+            <input type={show ? 'text' : 'password'} className="field text-start" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <button type="button" onClick={() => setShow(!show)} className="-me-2 grid size-9 shrink-0 place-items-center text-ink-3" aria-label="Show password">
+              {show ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </label>
+        </div>
+        {error && <p className="section-footer text-danger" role="alert">{error}</p>}
+        <button type="submit" className="btn-primary mt-6 w-full" disabled={busy}>
+          {busy && <Spinner size={18} />} {t('signIn')}
+        </button>
+      </form>
+
+      <div className="mt-auto pt-10">
+        <LangSwitch />
       </div>
     </div>
   );

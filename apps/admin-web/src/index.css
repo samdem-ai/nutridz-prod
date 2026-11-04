@@ -11,68 +11,71 @@
   }
 }
 
+/* Native (iOS-style) palette: grouped background, white cells, hairline separators. */
 :root {
-  --canvas: #f4f3ee;
+  --canvas: #f2f2f7;
   --surface: #ffffff;
-  --surface-2: #efeee7;
-  --line: #e2e0d6;
-  --ink: #1e2620;
-  --ink-2: #525a53;
-  --ink-3: #8b918a;
+  --surface-2: #e5e5ea;
+  --fill: rgba(118, 118, 128, 0.12);
+  --line: #c6c6c8;
+  --ink: #000000;
+  --ink-2: #3c3c43;
+  --ink-3: #8e8e93;
   --brand: #1a7d3e;
   --brand-600: #156833;
-  --brand-50: #ebf4ee;
+  --brand-50: #e8f3ec;
   --brand-100: #d3e8da;
   --brand-300: #6fc48c;
   --accent: #c27803;
-  --danger: #c4372b;
-  --danger-50: #fbeceb;
-  --warn-50: #fdf4e3;
-  --protein: #3b6fc4;
-  --carbs: #c98a12;
-  --fat: #c4473b;
-  --fiber: #7a5bbf;
-  --chrome: #1a7d3e;
-  --chrome-ink: #ffffff;
+  --danger: #ff3b30;
+  --danger-50: #fdecea;
+  --warn-50: #fdf3dd;
+  --protein: #007aff;
+  --carbs: #ff9500;
+  --fat: #ff3b30;
+  --fiber: #af52de;
+  --bar: rgba(249, 249, 249, 0.94);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --canvas: #141414;
-    --surface: #1c1c1c;
-    --surface-2: #252525;
-    --line: #2f2f2f;
-    --ink: #ececea;
-    --ink-2: #b3b3ad;
-    --ink-3: #85857f;
-    --brand: #2e9c55;
-    --brand-600: #288a4b;
-    --brand-50: #1a2a1f;
-    --brand-100: #213727;
-    --danger-50: #351e1c;
-    --warn-50: #33291a;
-    --chrome: #15402a;
-    --chrome-ink: #eef5ef;
+    --canvas: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --fill: rgba(118, 118, 128, 0.24);
+    --line: #38383a;
+    --ink: #ffffff;
+    --ink-2: #ebebf5;
+    --ink-3: #8e8e93;
+    --brand: #30a14e;
+    --brand-600: #2b9146;
+    --brand-50: #13251a;
+    --brand-100: #1b3524;
+    --danger: #ff453a;
+    --danger-50: #3a1714;
+    --warn-50: #33280f;
+    --bar: rgba(22, 22, 23, 0.94);
     color-scheme: dark;
   }
 }
 :root[data-theme='dark'] {
-  --canvas: #141414;
-  --surface: #1c1c1c;
-  --surface-2: #252525;
-  --line: #2f2f2f;
-  --ink: #ececea;
-  --ink-2: #b3b3ad;
-  --ink-3: #85857f;
-  --brand: #2e9c55;
-  --brand-600: #288a4b;
-  --brand-50: #1a2a1f;
-  --brand-100: #213727;
-  --danger-50: #351e1c;
-  --warn-50: #33291a;
-  --chrome: #15402a;
-  --chrome-ink: #eef5ef;
+  --canvas: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --fill: rgba(118, 118, 128, 0.24);
+  --line: #38383a;
+  --ink: #ffffff;
+  --ink-2: #ebebf5;
+  --ink-3: #8e8e93;
+  --brand: #30a14e;
+  --brand-600: #2b9146;
+  --brand-50: #13251a;
+  --brand-100: #1b3524;
+  --danger: #ff453a;
+  --danger-50: #3a1714;
+  --warn-50: #33280f;
+  --bar: rgba(22, 22, 23, 0.94);
   color-scheme: dark;
 }
 
@@ -80,6 +83,7 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-fill: var(--fill);
   --color-line: var(--line);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
@@ -97,10 +101,9 @@
   --color-carbs: var(--carbs);
   --color-fat: var(--fat);
   --color-fiber: var(--fiber);
-  --color-chrome: var(--chrome);
-  --color-chrome-ink: var(--chrome-ink);
-  --font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --color-bar: var(--bar);
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, 'Noto Sans Arabic', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 html,
@@ -111,45 +114,131 @@ body {
 }
 body {
   font-family: var(--font-sans);
+  font-size: 17px;
+  letter-spacing: -0.01em;
   min-height: 100dvh;
-}
-html[dir='rtl'] body {
-  font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ── Grouped lists ──────────────────────────────────────────── */
+@utility group-list {
+  @apply overflow-hidden rounded-[10px] bg-surface;
+}
+/* Separators inset from the leading edge, like UITableView */
+.group-list > * {
+  position: relative;
+}
+.group-list > * + *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline-start: var(--inset, 16px);
+  inset-inline-end: 0;
+  border-top: 0.5px solid var(--line);
+  pointer-events: none;
+}
+@utility cell {
+  @apply flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-start;
+}
+@utility cell-tap {
+  @apply cell transition-colors active:bg-surface-2;
+}
+@utility section-header {
+  @apply px-4 pb-1.5 pt-6 text-[13px] uppercase text-ink-3;
+}
+@utility section-footer {
+  @apply px-4 pt-1.5 text-[13px] text-ink-3;
+}
+@utility large-title {
+  @apply text-[30px] font-bold leading-tight tracking-tight lg:text-[34px];
+}
+
+/* ── Controls ───────────────────────────────────────────────── */
 @utility card {
-  @apply rounded-lg border border-line bg-surface;
-  box-shadow: 0 1px 0 rgba(30, 38, 32, 0.04);
+  @apply rounded-[10px] bg-surface;
 }
 @utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;
+  @apply inline-flex min-h-[50px] items-center justify-center gap-2 rounded-xl px-5 text-[17px] font-semibold transition-opacity active:opacity-70 disabled:pointer-events-none disabled:opacity-40;
 }
 @utility btn-primary {
-  @apply btn bg-brand text-white hover:bg-brand-600;
+  @apply btn bg-brand text-white;
 }
 @utility btn-dark {
-  @apply btn bg-ink text-canvas hover:opacity-90;
+  @apply btn bg-ink text-canvas;
 }
 @utility btn-soft {
-  @apply btn border border-line bg-surface text-ink hover:bg-surface-2;
+  @apply btn bg-brand/12 text-brand;
 }
 @utility btn-ghost {
-  @apply btn bg-transparent text-ink-2 hover:bg-surface-2;
+  @apply btn bg-transparent text-brand;
 }
 @utility btn-danger {
-  @apply btn border border-line bg-surface text-danger hover:bg-danger-50;
+  @apply btn bg-danger/12 text-danger;
+}
+@utility link {
+  @apply text-brand active:opacity-60;
 }
 @utility input {
-  @apply min-h-11 w-full rounded-md border border-line bg-surface px-3 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-3 focus:border-brand;
+  @apply min-h-11 w-full rounded-[10px] bg-surface px-4 text-[17px] text-ink outline-none placeholder:text-ink-3;
+}
+@utility field {
+  @apply min-w-0 flex-1 bg-transparent text-end text-[17px] text-ink outline-none placeholder:text-ink-3;
 }
 @utility label {
-  @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+  @apply mb-1.5 block px-4 text-[13px] uppercase text-ink-3;
+}
+@utility search {
+  @apply min-h-9 w-full rounded-[10px] bg-fill ps-9 pe-3 text-[17px] text-ink outline-none placeholder:text-ink-3;
 }
 @utility chip {
-  @apply inline-flex min-h-8 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-[13px] font-medium text-ink-2 transition-colors whitespace-nowrap;
+  @apply inline-flex min-h-8 items-center gap-1.5 rounded-full bg-surface px-3.5 text-[15px] text-ink whitespace-nowrap active:opacity-70;
 }
 @utility chip-on {
-  @apply border-ink bg-ink text-canvas;
+  @apply bg-brand text-white;
+}
+@utility segmented {
+  @apply flex rounded-[9px] bg-fill p-0.5;
+}
+@utility segment {
+  @apply min-h-7 flex-1 rounded-[7px] px-2 text-[13px] font-medium text-ink;
+}
+@utility segment-on {
+  @apply bg-surface dark:bg-[#636366];
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* iOS switch */
+.switch {
+  appearance: none;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  border-radius: 999px;
+  background: var(--fill);
+  transition: background 0.2s;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 3px 1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s;
+}
+.switch:checked {
+  background: #34c759;
+}
+.switch:checked::after {
+  transform: translateX(20px);
+}
+html[dir='rtl'] .switch:checked::after {
+  transform: translateX(-20px);
 }
 
 .scan-line {
