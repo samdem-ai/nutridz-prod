@@ -43,10 +43,9 @@ export function ProductsPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold lg:text-2xl">{t('productsTitle')}</h1>
-          <p className="mt-1 text-ink-2">{t('productsSubtitle', { n: data?.total ?? '…' })}</p>
-        </div>
+        <h1 className="text-xl font-semibold lg:text-2xl">
+          {t('productsTitle')} <span className="text-base font-normal text-ink-3 tabular-nums">{data?.total ?? ''}</span>
+        </h1>
         <div className="hidden rounded-xl bg-surface-2 p-1 sm:flex">
           {(['grid', 'table'] as const).map((v) => (
             <button key={v} type="button" onClick={() => setView(v)} className={`grid size-9 place-items-center rounded-lg ${view === v ? 'bg-surface text-ink shadow-sm' : 'text-ink-3'}`} aria-pressed={view === v} aria-label={v}>

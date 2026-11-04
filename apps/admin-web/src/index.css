@@ -12,13 +12,13 @@
 }
 
 :root {
-  --canvas: #f6f6f4;
+  --canvas: #f4f3ee;
   --surface: #ffffff;
-  --surface-2: #f0f0ed;
-  --line: #e2e2de;
-  --ink: #1d1d1b;
-  --ink-2: #57574f;
-  --ink-3: #8a8a82;
+  --surface-2: #efeee7;
+  --line: #e2e0d6;
+  --ink: #1e2620;
+  --ink-2: #525a53;
+  --ink-3: #8b918a;
   --brand: #1a7d3e;
   --brand-600: #156833;
   --brand-50: #ebf4ee;
@@ -32,6 +32,8 @@
   --carbs: #c98a12;
   --fat: #c4473b;
   --fiber: #7a5bbf;
+  --chrome: #1a7d3e;
+  --chrome-ink: #ffffff;
   color-scheme: light;
 }
 
@@ -50,6 +52,8 @@
     --brand-100: #213727;
     --danger-50: #351e1c;
     --warn-50: #33291a;
+    --chrome: #15402a;
+    --chrome-ink: #eef5ef;
     color-scheme: dark;
   }
 }
@@ -67,6 +71,8 @@
   --brand-100: #213727;
   --danger-50: #351e1c;
   --warn-50: #33291a;
+  --chrome: #15402a;
+  --chrome-ink: #eef5ef;
   color-scheme: dark;
 }
 
@@ -91,7 +97,10 @@
   --color-carbs: var(--carbs);
   --color-fat: var(--fat);
   --color-fiber: var(--fiber);
-  --font-sans: 'Inter', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+  --color-chrome: var(--chrome);
+  --color-chrome-ink: var(--chrome-ink);
+  --font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 html,
@@ -105,11 +114,12 @@ body {
   min-height: 100dvh;
 }
 html[dir='rtl'] body {
-  font-family: 'Noto Sans Arabic', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 @utility card {
   @apply rounded-lg border border-line bg-surface;
+  box-shadow: 0 1px 0 rgba(30, 38, 32, 0.04);
 }
 @utility btn {
   @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;

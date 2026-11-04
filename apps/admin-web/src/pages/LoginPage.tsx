@@ -32,16 +32,18 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col items-center px-4 py-10 sm:justify-center">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center justify-between">
+    <div className="min-h-dvh">
+      <div className="bg-chrome px-4 pb-24 pt-5 text-chrome-ink">
+        <div className="mx-auto flex max-w-sm items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src="/icon.png" alt="" className="size-8 rounded-md" />
-            <span className="font-semibold">NutriDz <span className="font-normal text-ink-3">Admin</span></span>
+            <span className="font-semibold">NutriDz <span className="font-normal text-white/65">Admin</span></span>
           </div>
-          <LangSwitch />
+          <LangSwitch onChrome />
         </div>
-        <form onSubmit={submit} className="card space-y-4 p-6">
+      </div>
+      <div className="-mt-16 px-4 pb-10">
+        <form onSubmit={submit} className="card mx-auto max-w-sm space-y-4 p-6">
           <div>
             <h1 className="text-lg font-semibold">{t('loginTitle')}</h1>
             <p className="mt-1 text-sm text-ink-2">{t('loginSubtitle')}</p>

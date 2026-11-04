@@ -26,27 +26,29 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold lg:text-2xl">{t('hello')}</h1>
-          <p className="mt-0.5 text-sm text-ink-2">{t('dashboardSubtitle')}</p>
-        </div>
+        <h1 className="text-xl font-semibold lg:text-2xl">{t('hello')}</h1>
         <Link to="/scan" className="btn-primary hidden sm:inline-flex">
           <ScanBarcode size={17} /> {t('startScanning')}
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {tiles.map(({ label, value, to }) => {
+      <div className="card grid grid-cols-2 lg:grid-cols-4">
+        {tiles.map(({ label, value, to }, i) => {
+          const highlight = to && !!value;
           const body = (
             <>
-              <p className="text-[13px] text-ink-2">{label}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{value ?? '—'}</p>
+              <p className={`text-[28px] font-semibold leading-none tabular-nums ${highlight ? 'text-accent' : ''}`}>{value ?? '—'}</p>
+              <p className="mt-2 text-[13px] text-ink-2">
+                {label}
+                {highlight && <span className="text-accent"> →</span>}
+              </p>
             </>
           );
+          const cls = `px-5 py-4 ${i % 2 === 1 ? 'border-s border-line' : ''} ${i >= 2 ? 'border-t border-line lg:border-t-0' : ''} ${i === 2 ? 'lg:border-s' : ''}`;
           return to ? (
-            <Link key={label} to={to} className="card p-4 hover:border-ink-3">{body}</Link>
+            <Link key={label} to={to} className={`${cls} hover:bg-surface-2`}>{body}</Link>
           ) : (
-            <div key={label} className="card p-4">{body}</div>
+            <div key={label} className={cls}>{body}</div>
           );
         })}
       </div>
@@ -95,7 +97,7 @@ export function DashboardPage() {
                       <span className="tabular-nums">{n}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-surface-2">
-                      <div className="h-1.5 rounded-full bg-ink-3" style={{ width: `${(n / maxCat) * 100}%` }} />
+                      <div className="h-1.5 rounded-full bg-brand" style={{ width: `${(n / maxCat) * 100}%` }} />
                     </div>
                   </div>
                 );

@@ -31,20 +31,26 @@ export function BrandMark({ className = 'size-9' }: { className?: string }) {
   return <img src="/icon.png" alt="" className={`${className} rounded-xl`} />;
 }
 
-export function LangSwitch() {
+export function LangSwitch({ onChrome = false }: { onChrome?: boolean }) {
   const { lang, setLang, t } = useI18n();
   return (
-    <div className="flex rounded-md border border-line p-0.5" role="group" aria-label={t('language')}>
-      {(['fr', 'en', 'ar'] as Lang[]).map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => setLang(l)}
-          className={`min-h-7 rounded px-2 text-[12px] font-medium uppercase ${lang === l ? 'bg-surface-2 text-ink' : 'text-ink-3'}`}
-          aria-pressed={lang === l}
-        >
-          {l === 'ar' ? 'ع' : l}
-        </button>
+    <div className="flex items-center gap-0.5 text-[12px]" role="group" aria-label={t('language')}>
+      {(['fr', 'en', 'ar'] as Lang[]).map((l, i) => (
+        <span key={l} className="flex items-center">
+          {i > 0 && <span className={onChrome ? 'text-white/30' : 'text-line'}>|</span>}
+          <button
+            type="button"
+            onClick={() => setLang(l)}
+            className={`min-h-8 px-1.5 font-medium uppercase ${
+              lang === l
+                ? onChrome ? 'text-white underline underline-offset-4' : 'text-ink underline underline-offset-4'
+                : onChrome ? 'text-white/60 hover:text-white' : 'text-ink-3 hover:text-ink'
+            }`}
+            aria-pressed={lang === l}
+          >
+            {l === 'ar' ? 'ع' : l}
+          </button>
+        </span>
       ))}
     </div>
   );
@@ -67,12 +73,12 @@ export function Layout() {
   return (
     <div className="min-h-dvh lg:flex">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-e border-line bg-surface p-4 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col bg-chrome p-4 text-chrome-ink lg:flex">
         <div className="mb-6 flex items-center gap-2.5 px-1">
           <BrandMark className="size-8" />
           <div>
             <p className="font-semibold leading-tight">NutriDz</p>
-            <p className="text-[12px] font-semibold text-ink-3">Admin</p>
+            <p className="text-[12px] text-white/65">Administration</p>
           </div>
         </div>
         <nav className="flex flex-col gap-1">
@@ -83,7 +89,7 @@ export function Layout() {
               end={end}
               className={({ isActive }) =>
                 `flex min-h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors ${
-                  primary ? 'mb-3 bg-brand text-white hover:bg-brand-600' : isActive ? 'bg-surface-2 text-ink' : 'text-ink-2 hover:bg-surface-2'
+                  primary ? 'mb-4 bg-white text-[#1a7d3e] hover:bg-white/90 dark:bg-white/90' : isActive ? 'bg-black/20 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
@@ -95,18 +101,18 @@ export function Layout() {
         </nav>
         <div className="mt-auto space-y-3">
           <div className="flex items-center justify-between">
-            <LangSwitch />
-            <button type="button" onClick={toggle} className="grid size-8 place-items-center rounded-md text-ink-2 hover:bg-surface-2" aria-label={t('theme')}>
+            <LangSwitch onChrome />
+            <button type="button" onClick={toggle} className="grid size-8 place-items-center rounded-md text-white/75 hover:bg-white/10" aria-label={t('theme')}>
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
           </div>
-          <div className="flex items-center gap-3 border-t border-line pt-3">
-            <div className="grid size-8 place-items-center rounded-full bg-surface-2 text-sm font-medium text-ink-2">{user?.username.slice(0, 1).toUpperCase()}</div>
+          <div className="flex items-center gap-3 border-t border-white/15 pt-3">
+            <div className="grid size-8 place-items-center rounded-full bg-white/15 text-sm font-medium">{user?.username.slice(0, 1).toUpperCase()}</div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{user?.username}</p>
-              <p className="truncate text-[12px] text-ink-3">{user?.email}</p>
+              <p className="truncate text-[12px] text-white/60">{user?.email}</p>
             </div>
-            <button type="button" onClick={logout} className="grid size-8 place-items-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-danger" aria-label={t('logout')}>
+            <button type="button" onClick={logout} className="grid size-8 place-items-center rounded-md text-white/70 hover:bg-white/10 hover:text-white" aria-label={t('logout')}>
               <LogOut size={17} />
             </button>
           </div>
@@ -115,14 +121,14 @@ export function Layout() {
 
       <div className="min-w-0 flex-1">
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5 lg:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-2.5 bg-chrome px-4 py-2.5 text-chrome-ink lg:hidden">
           <BrandMark className="size-7" />
-          <p className="flex-1 text-[15px] font-semibold">NutriDz <span className="font-normal text-ink-3">Admin</span></p>
-          <LangSwitch />
-          <button type="button" onClick={toggle} className="grid size-8 place-items-center rounded-md text-ink-2 hover:bg-surface-2" aria-label={t('theme')}>
+          <p className="flex-1 text-[15px] font-semibold">NutriDz <span className="font-normal text-white/65">Admin</span></p>
+          <LangSwitch onChrome />
+          <button type="button" onClick={toggle} className="grid size-8 place-items-center rounded-md text-white/80 hover:bg-white/10" aria-label={t('theme')}>
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
-          <button type="button" onClick={logout} className="grid size-8 place-items-center rounded-md text-ink-2 hover:bg-surface-2" aria-label={t('logout')}>
+          <button type="button" onClick={logout} className="grid size-8 place-items-center rounded-md text-white/80 hover:bg-white/10" aria-label={t('logout')}>
             <LogOut size={16} />
           </button>
         </header>

@@ -25,19 +25,16 @@ export function ReviewListPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold lg:text-2xl">{t('reviewTitle')}</h1>
-        <p className="mt-1 text-ink-2">{t('reviewSubtitle')}</p>
-      </div>
+      <h1 className="text-xl font-semibold lg:text-2xl">{t('reviewTitle')}</h1>
 
-      <div className="flex gap-1 rounded-md border border-line bg-surface-2 p-1" role="tablist">
+      <div className="flex gap-5 border-b border-line" role="tablist">
         {TABS.map((s) => (
           <button
             key={s}
             role="tab"
             aria-selected={status === s}
             onClick={() => setParams({ status: s })}
-            className={`min-h-9 flex-1 rounded text-sm font-medium ${status === s ? 'bg-surface text-ink' : 'text-ink-3'}`}
+            className={`-mb-px min-h-10 border-b-2 text-sm font-medium ${status === s ? 'border-brand text-ink' : 'border-transparent text-ink-3 hover:text-ink'}`}
           >
             {t(`status_${s}`)}
           </button>
