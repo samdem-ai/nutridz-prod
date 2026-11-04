@@ -11,6 +11,7 @@ public class Food {
     private Long id;
     private String name;
     private String nameAr;
+    private String brand;
     private FoodCategory category;
     private FoodSource source;
     private Float caloriesPer100g;

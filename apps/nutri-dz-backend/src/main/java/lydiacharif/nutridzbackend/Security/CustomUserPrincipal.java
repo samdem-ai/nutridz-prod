@@ -13,7 +13,8 @@ public record CustomUserPrincipal(User user) implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        return Collections.singletonList(new SimpleGrantedAuthority(
+                "ROLE_" + (user.getRole() != null ? user.getRole().name() : "USER")));
     }
 
     @Override

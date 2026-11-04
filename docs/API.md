@@ -178,3 +178,43 @@ All non-2xx responses follow:
 ```
 
 `errorCode` enum: `VALIDATION_ERROR`, `INVALID_REQUEST`, `RESOURCE_NOT_FOUND`, `RESOURCE_ALREADY_EXISTS`, `UNAUTHORIZED`, `FORBIDDEN`, `INTERNAL_ERROR`.
+
+
+---
+
+## Admin — `/api/admin` (role `ADMIN` only)
+
+Used by the admin website (`apps/admin-web`). Non-admin tokens get `403`.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/stats` | Totals, pending/approved/rejected counts, per-category counts, contributors |
+| GET | `/barcode/{code}` | `{ existingFood, pendingSubmissionId }` — is this code already known? |
+| POST | `/submissions` | Submit a scanned product (status `PENDING`) |
+| GET | `/submissions?status=&q=&page=&size=` | List (label photo omitted) |
+| GET | `/submissions/{id}` | Detail incl. label photo and OCR text |
+| PUT | `/submissions/{id}` | Edit a pending submission |
+| POST | `/submissions/{id}/approve` | Publish to `foods` (optional body = final edits) |
+| POST | `/submissions/{id}/reject` | `{ reason }` |
+| POST | `/submissions/{id}/reopen` | Rejected → pending |
+| DELETE | `/submissions/{id}` | Delete a pending/rejected submission |
+| GET | `/foods?q=&category=&verified=&hasBarcode=&page=&size=` | Browse the app's food database |
+| GET / PUT | `/foods/{id}` | Read / edit a food directly |
+| PATCH | `/foods/{id}/verified` | `{ verified: true|false }` |
+
+Submission body:
+```json
+{
+  "barcode": "6130123456789", "codeFormat": "EAN_13",
+  "name": "Selecto 1L", "nameAr": "سيليكتو", "brand": "Hamoud Boualem",
+  "category": "PACKAGED_PRODUCT",
+  "caloriesPer100g": 42, "proteinPer100g": 0, "carbsPer100g": 10.6, "sugarPer100g": 10.6,
+  "fatPer100g": 0, "fiberPer100g": 0, "saltPer100g": 0.03, "nutritionalScore": "E",
+  "servingSizes": [{ "label": "1 bouteille", "grams": 1000 }],
+  "productImage": "data:image/jpeg;base64,...", "labelImage": "data:image/jpeg;base64,...",
+  "ocrText": "...", "targetFoodId": null
+}
+```
+If the barcode already exists in `foods`, the submission is linked to it (`targetFoodId`) and approval updates that food.
+
+Public: `GET /api/public/food-images/{foodId}` serves approved product photos (no auth).
