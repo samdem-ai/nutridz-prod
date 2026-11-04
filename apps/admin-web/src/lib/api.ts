@@ -1,4 +1,4 @@
-import type { BarcodeCheck, Food, FoodCategory, Me, Page, ProductPayload, Stats, Submission, SubmissionStatus } from './types';
+import type { BarcodeCheck, Food, FoodCategory, LabelOcrResult, Me, Page, ProductPayload, Stats, Submission, SubmissionStatus } from './types';
 
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:8080/api';
 
@@ -76,6 +76,8 @@ export const api = {
   me: () => request<Me>('/auth/me'),
 
   stats: () => request<Stats>('/admin/stats'),
+  readLabel: (image: string) =>
+    request<LabelOcrResult>('/admin/ocr-label', { method: 'POST', body: JSON.stringify({ image }) }),
   checkBarcode: (code: string) => request<BarcodeCheck>(`/admin/barcode/${encodeURIComponent(code)}`),
 
   submissions: (params: { status?: SubmissionStatus; q?: string; page?: number; size?: number }) =>

@@ -173,6 +173,7 @@ const fr = {
   database: 'Base de données',
   recent: 'Récents',
   identity: 'Produit',
+  readingAi: 'Lecture par IA…',
   kcal: 'kcal',
 };
 
@@ -341,6 +342,7 @@ const en: Dict = {
   database: 'Database',
   recent: 'Recent',
   identity: 'Product',
+  readingAi: 'AI reading…',
   kcal: 'kcal',
 };
 
@@ -506,6 +508,7 @@ const ar: Dict = {
   database: 'قاعدة البيانات',
   recent: 'الأحدث',
   identity: 'المنتج',
+  readingAi: 'قراءة بالذكاء الاصطناعي…',
   kcal: 'سعرة',
 };
 

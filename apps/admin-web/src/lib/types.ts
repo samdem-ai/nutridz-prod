@@ -115,3 +115,20 @@ export const NUTRIENT_FIELDS: { key: keyof NutritionFields; unit: string; max: n
   { key: 'fiberPer100g', unit: 'g', max: 100 },
   { key: 'saltPer100g', unit: 'g', max: 100 },
 ];
+
+export interface LabelOcrResult {
+  found: boolean;
+  name?: string | null;
+  nameAr?: string | null;
+  brand?: string | null;
+  isDrink?: boolean;
+  basis?: '100g' | '100ml';
+  caloriesPer100g?: number | null;
+  proteinPer100g?: number | null;
+  carbsPer100g?: number | null;
+  sugarPer100g?: number | null;
+  fatPer100g?: number | null;
+  fiberPer100g?: number | null;
+  saltPer100g?: number | null;
+  warnings?: string[];
+}

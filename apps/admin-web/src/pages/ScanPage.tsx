@@ -17,7 +17,7 @@ import { errorMessage } from '../lib/format';
 import { compressToDataUri, rotateDataUri } from '../lib/image';
 import { preloadOcr, recognizeLabel, type OcrLang } from '../lib/ocr';
 import { parseNutritionText, type NutrientKey, type ParsedNutrition } from '../lib/nutritionParser';
-import type { BarcodeCheck, Submission } from '../lib/types';
+import type { BarcodeCheck, LabelOcrResult, Submission } from '../lib/types';
 
 const PARSER_TO_FORM: Record<NutrientKey, NumKey> = {
   calories: 'caloriesPer100g',
@@ -28,6 +28,28 @@ const PARSER_TO_FORM: Record<NutrientKey, NumKey> = {
   fiber: 'fiberPer100g',
   salt: 'saltPer100g',
 };
+
+/** Per-100g keys on the server OCR result, matching the form's nutrient keys. */
+const NUTRIENT_KEYS: NumKey[] = [
+  'caloriesPer100g', 'proteinPer100g', 'carbsPer100g', 'sugarPer100g',
+  'fatPer100g', 'fiberPer100g', 'saltPer100g',
+];
+
+/** Adapt a server (Groq) OCR result to the on-screen ParsedNutrition summary. */
+function serverToParsed(r: LabelOcrResult): ParsedNutrition {
+  const values: ParsedNutrition['values'] = {};
+  (Object.keys(PARSER_TO_FORM) as NutrientKey[]).forEach((k) => {
+    const v = r[PARSER_TO_FORM[k]];
+    if (v != null) values[k] = v;
+  });
+  return {
+    values,
+    derived: [],
+    uncertain: [],
+    warnings: r.warnings ?? [],
+    basis: r.basis ?? null,
+  };
+}
 
 type Step = 0 | 1 | 2 | 3;
 
@@ -116,6 +138,29 @@ export function ScanPage() {
             });
             setHints(h);
             setForm({ ...form, nutrients, isDrink: form.isDrink || parsed.basis === '100ml' });
+          }}
+          onServerResult={(r) => {
+            setOcrText(null);
+            const nutrients = { ...form.nutrients };
+            const h: Partial<Record<NumKey, FieldHint>> = {};
+            NUTRIENT_KEYS.forEach((k) => {
+              const v = r[k];
+              if (v != null) {
+                nutrients[k] = String(v);
+                h[k] = 'ocr';
+              } else if (!nutrients[k]) {
+                h[k] = 'missing';
+              }
+            });
+            setHints(h);
+            const patch: Partial<FormState> = {
+              nutrients,
+              isDrink: form.isDrink || r.basis === '100ml' || !!r.isDrink,
+            };
+            if (r.name && !form.name.trim()) patch.name = r.name;
+            if (r.nameAr && !form.nameAr.trim()) patch.nameAr = r.nameAr;
+            if (r.brand && !form.brand.trim()) patch.brand = r.brand;
+            setForm({ ...form, ...patch });
           }}
           ocrText={ocrText}
           onBack={() => go(0)}
@@ -295,11 +340,12 @@ function CodeStep({
 // ─── Step 2: label photo + OCR ─────────────────────────────────────
 
 function LabelStep({
-  image, setImage, onParsed, ocrText, onBack, onNext,
+  image, setImage, onParsed, onServerResult, ocrText, onBack, onNext,
 }: {
   image: string | null;
   setImage: (s: string | null) => void;
   onParsed: (text: string, parsed: ParsedNutrition) => void;
+  onServerResult: (r: LabelOcrResult) => void;
   ocrText: string | null;
   onBack: () => void;
   onNext: () => void;
@@ -311,23 +357,44 @@ function LabelStep({
   const [langs, setLangs] = useState<OcrLang[]>(['fra', 'eng']);
   const [progress, setProgress] = useState<{ p: number; status: string } | null>(null);
   const [result, setResult] = useState<ParsedNutrition | null>(null);
+  const [engine, setEngine] = useState<'ai' | 'device' | null>(null);
   const [showRaw, setShowRaw] = useState(false);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setResult(null);
+    setEngine(null);
     setImage(await compressToDataUri(file, 1600, 0.82));
+  };
+
+  const readWithTesseract = async () => {
+    const { texts } = await recognizeLabel(image!, langs, (p, status) => setProgress({ p, status }));
+    const parsed = parseNutritionText(texts);
+    setResult(parsed);
+    setEngine('device');
+    onParsed(texts[0], parsed);
   };
 
   const read = async () => {
     if (!image) return;
     setResult(null);
-    setProgress({ p: 0, status: 'loading' });
+    setEngine(null);
+    setProgress({ p: 0, status: 'ai' });
     try {
-      const { texts } = await recognizeLabel(image, langs, (p, status) => setProgress({ p, status }));
-      const parsed = parseNutritionText(texts);
-      setResult(parsed);
-      onParsed(texts[0], parsed);
+      // 1. Server-side vision model (Groq). Falls back to on-device OCR on any failure.
+      try {
+        const r = await api.readLabel(image);
+        if (r.found && NUTRIENT_KEYS.some((k) => r[k] != null)) {
+          onServerResult(r);
+          setResult(serverToParsed(r));
+          setEngine('ai');
+          return;
+        }
+      } catch {
+        /* fall through to on-device OCR */
+      }
+      // 2. On-device fallback (Tesseract)
+      await readWithTesseract();
     } catch {
       toast(t('genericError'), 'error');
     } finally {
@@ -365,10 +432,12 @@ function LabelStep({
             {progress && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 text-white backdrop-blur-sm">
                 <Spinner size={28} />
-                <p className="font-semibold">{progress.status === 'recognizing text' ? t('reading') : t('ocrLoading')}</p>
-                <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/20">
-                  <div className="h-full bg-brand-300 transition-all" style={{ width: `${Math.round(progress.p * 100)}%` }} />
-                </div>
+                <p className="font-semibold">{progress.status === 'ai' ? t('readingAi') : progress.status === 'recognizing text' ? t('reading') : t('ocrLoading')}</p>
+                {progress.status !== 'ai' && (
+                  <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/20">
+                    <div className="h-full bg-brand-300 transition-all" style={{ width: `${Math.round(progress.p * 100)}%` }} />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -398,7 +467,10 @@ function LabelStep({
 
           {result && (
             <div className={`rounded-lg p-5 ${found ? 'bg-brand-50' : 'bg-warn-50'}`}>
-              <p className="font-semibold">{found ? t('ocrFound', { n: found }) : t('ocrNone')}</p>
+              <p className="flex items-center gap-2 font-semibold">
+                {found ? t('ocrFound', { n: found }) : t('ocrNone')}
+                {engine && <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-medium text-ink-3 dark:bg-white/10">{engine === 'ai' ? 'Groq' : 'Tesseract'}</span>}
+              </p>
               {found > 0 && (
                 <div className="mt-4">
                   <NutritionTable
