@@ -28,6 +28,18 @@ VISION_API_KEY = os.getenv("VISION_API_KEY", "")
 VISION_BASE_URL = os.getenv("VISION_BASE_URL", "https://api.groq.com/openai/v1")
 VISION_MODEL = os.getenv("VISION_MODEL", "qwen/qwen3.8-27b")
 
+# ── Jev cascade (prototype) ──────────────────────────────────────────
+# Dish classification step tried before the Gemini vision call on meal
+# photos. Jev is TypeSafe's decision model, reached through OpenRouter's
+# Decisions API with the SAME OPENROUTER_API_KEY above — no extra secret.
+# Off by default: TypeSafe's own docs call Jev's image input a preview
+# feature, and this dish list has not been checked against real photos.
+# See docs/AI.md#jev-cascade-prototype before turning it on.
+DECISIONS_API_URL = "https://openrouter.ai/api/alpha/decisions"
+JEV_ENABLED = os.getenv("JEV_ENABLED", "false").strip().lower() in ("1", "true", "yes")
+JEV_MODEL = os.getenv("JEV_MODEL", "typesafe/jev-1.14")
+JEV_CONFIDENCE_THRESHOLD = float(os.getenv("JEV_CONFIDENCE_THRESHOLD", "0.8"))
+
 app = FastAPI(
     title="Nutridz AI Service",
     description="AI-powered nutrition assistant — Algerian cuisine focused",
@@ -310,6 +322,149 @@ async def suggest_improvement(request: MealAnalysisRequest):
         return {"suggestion": "Suggestions non disponibles pour le moment."}
 
 
+# ── Jev cascade: closed-list dish lookup before the Gemini call ────
+#
+# PROTOTYPE values. Calories/macros below are rough per-100g estimates for
+# NutriDz's own known dish list, in the same spirit as the hardcoded drink
+# values in the Gemini vision prompt further down — NOT verified against
+# the real `foods` table. The Java backend's resolveDetectedFood() already
+# prefers a DB match by name over whatever this service returns, so these
+# numbers are only the fallback used the first time a dish is auto-created.
+# Verify them (or better: seed these dishes into the DB) before relying on
+# this cascade in production. See docs/AI.md#jev-cascade-prototype.
+ALGERIAN_DISH_NUTRITION: dict = {
+    "couscous":         {"name": "Couscous",         "nameAr": "كسكسي",     "caloriesPer100g": 180, "proteinPer100g": 5,  "carbsPer100g": 30, "fatPer100g": 4,  "nutritionalScore": "B", "defaultPortionGrams": 350},
+    "chorba frik":      {"name": "Chorba Frik",       "nameAr": "شربة فريك", "caloriesPer100g": 70,  "proteinPer100g": 4,  "carbsPer100g": 10, "fatPer100g": 2,  "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "chorba beida":     {"name": "Chorba Beida",      "nameAr": "شربة بيضاء","caloriesPer100g": 60,  "proteinPer100g": 3,  "carbsPer100g": 8,  "fatPer100g": 2,  "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "rechta":           {"name": "Rechta",            "nameAr": "رشتة",      "caloriesPer100g": 190, "proteinPer100g": 6,  "carbsPer100g": 32, "fatPer100g": 4,  "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "tajine zitoune":   {"name": "Tajine Zitoune",    "nameAr": "طاجين زيتون","caloriesPer100g": 210, "proteinPer100g": 15, "carbsPer100g": 6,  "fatPer100g": 14, "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "chakchouka":       {"name": "Chakchouka",        "nameAr": "شكشوكة",    "caloriesPer100g": 120, "proteinPer100g": 5,  "carbsPer100g": 8,  "fatPer100g": 8,  "nutritionalScore": "B", "defaultPortionGrams": 250},
+    "mhajeb":           {"name": "Mhajeb",            "nameAr": "محاجب",     "caloriesPer100g": 260, "proteinPer100g": 6,  "carbsPer100g": 30, "fatPer100g": 12, "nutritionalScore": "C", "defaultPortionGrams": 200},
+    "loubia":           {"name": "Loubia",            "nameAr": "لوبية",     "caloriesPer100g": 140, "proteinPer100g": 8,  "carbsPer100g": 20, "fatPer100g": 3,  "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "hrira":            {"name": "Hrira",             "nameAr": "حريرة",     "caloriesPer100g": 90,  "proteinPer100g": 5,  "carbsPer100g": 14, "fatPer100g": 2,  "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "berkoukes":        {"name": "Berkoukes",         "nameAr": "بركوكس",    "caloriesPer100g": 150, "proteinPer100g": 6,  "carbsPer100g": 25, "fatPer100g": 3,  "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "rfiss":            {"name": "Rfiss",             "nameAr": "رفيس",      "caloriesPer100g": 300, "proteinPer100g": 5,  "carbsPer100g": 45, "fatPer100g": 10, "nutritionalScore": "C", "defaultPortionGrams": 150},
+    "dolma":            {"name": "Dolma",             "nameAr": "دولمة",     "caloriesPer100g": 160, "proteinPer100g": 6,  "carbsPer100g": 18, "fatPer100g": 7,  "nutritionalScore": "B", "defaultPortionGrams": 250},
+    "bourek":           {"name": "Bourek",            "nameAr": "بوراك",     "caloriesPer100g": 280, "proteinPer100g": 8,  "carbsPer100g": 25, "fatPer100g": 16, "nutritionalScore": "C", "defaultPortionGrams": 150},
+    "ktayef":           {"name": "Ktayef",             "nameAr": "قطايف",     "caloriesPer100g": 350, "proteinPer100g": 6,  "carbsPer100g": 45, "fatPer100g": 15, "nutritionalScore": "D", "defaultPortionGrams": 100},
+    "makroud":          {"name": "Makroud",            "nameAr": "مقروض",     "caloriesPer100g": 380, "proteinPer100g": 4,  "carbsPer100g": 55, "fatPer100g": 16, "nutritionalScore": "D", "defaultPortionGrams": 80},
+    "garantita":        {"name": "Garantita",          "nameAr": "كرنتيطة",   "caloriesPer100g": 150, "proteinPer100g": 6,  "carbsPer100g": 20, "fatPer100g": 5,  "nutritionalScore": "B", "defaultPortionGrams": 200},
+    "matlouh":          {"name": "Matlouh",             "nameAr": "مطلوع",     "caloriesPer100g": 290, "proteinPer100g": 7,  "carbsPer100g": 50, "fatPer100g": 6,  "nutritionalScore": "B", "defaultPortionGrams": 100},
+    "kesra":            {"name": "Kesra",               "nameAr": "كسرة",      "caloriesPer100g": 280, "proteinPer100g": 8,  "carbsPer100g": 52, "fatPer100g": 3,  "nutritionalScore": "B", "defaultPortionGrams": 150},
+    "chakhchoukha":     {"name": "Chakhchoukha",        "nameAr": "شخشوخة",    "caloriesPer100g": 220, "proteinPer100g": 7,  "carbsPer100g": 28, "fatPer100g": 8,  "nutritionalScore": "B", "defaultPortionGrams": 350},
+    "doubara":          {"name": "Doubara",             "nameAr": "دوبارة",    "caloriesPer100g": 130, "proteinPer100g": 6,  "carbsPer100g": 20, "fatPer100g": 3,  "nutritionalScore": "B", "defaultPortionGrams": 300},
+    "lham lahlou":      {"name": "Lham Lahlou",         "nameAr": "لحم لحلو",  "caloriesPer100g": 320, "proteinPer100g": 18, "carbsPer100g": 15, "fatPer100g": 20, "nutritionalScore": "C", "defaultPortionGrams": 250},
+    "mderbel":          {"name": "Mderbel",             "nameAr": "مدربل",     "caloriesPer100g": 150, "proteinPer100g": 4,  "carbsPer100g": 20, "fatPer100g": 6,  "nutritionalScore": "B", "defaultPortionGrams": 250},
+    "felfla mechouia":  {"name": "Felfla Mechouia",     "nameAr": "فلفلة مشوية","caloriesPer100g": 70,  "proteinPer100g": 2,  "carbsPer100g": 8,  "fatPer100g": 3,  "nutritionalScore": "A", "defaultPortionGrams": 150},
+}
+assert set(ALGERIAN_DISH_NUTRITION) == set(ALGERIAN_DISHES), "Jev dish list and nutrition table drifted apart"
+
+_JEV_PORTION_LEVELS = ["petite", "moyenne", "grande"]
+_JEV_PORTION_MULTIPLIER = {"petite": 0.6, "moyenne": 1.0, "grande": 1.5}
+
+
+async def _jev_decision(state: list, questions: dict) -> dict:
+    """POST to OpenRouter's Decisions API (alpha). Same key as openrouter_chat,
+    different endpoint — see https://openrouter.ai/docs/api/decisions."""
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY not configured")
+    payload = {"model": JEV_MODEL, "state": state, "questions": questions}
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": OPENROUTER_REFERER,
+        "X-Title": OPENROUTER_TITLE,
+        # TypeSafe's own docs require this for image requests; OpenRouter's
+        # Decisions API accepted the same request without it in testing, but
+        # sending it costs nothing and guards against that changing.
+        "TypeSafe-Danger-Zone-Images": "true",
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        r = await client.post(DECISIONS_API_URL, json=payload, headers=headers)
+        r.raise_for_status()
+        return r.json()
+
+
+async def _classify_dish_with_jev(image_bytes: bytes, mime: str) -> Optional[dict]:
+    """Cascade step tried before the full Gemini vision analysis: ask Jev to
+    pick the dish from NutriDz's closed list of known Algerian dishes.
+
+    Returns a detectedFoods-shaped dict (same shape as
+    _analyze_image_structured) when Jev confidently names a known dish, or
+    None to fall back to Gemini — the same behaviour as if this cascade
+    were disabled. Never raises: any failure (disabled, no key, network,
+    unexpected response shape) just falls back.
+    """
+    if not JEV_ENABLED:
+        return None
+    try:
+        b64 = base64.b64encode(image_bytes).decode()
+        dish_criteria = {name: None for name in ALGERIAN_DISH_NUTRITION}
+        dish_criteria["autre"] = (
+            "Un plat qui n'est pas dans cette liste, un plat non-algerien, "
+            "une boisson, ou aucun aliment identifiable sur la photo."
+        )
+        state = [
+            "Photo d'un repas prise par un utilisateur de l'application NutriDz.",
+            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+        ]
+        questions = {
+            "dish": {
+                "type": "choice",
+                "instructions": (
+                    "Quel plat de cette liste est visible sur la photo ? Si ce "
+                    "n'est pas l'un de ces plats, ou en cas de doute, choisis 'autre' "
+                    "plutot que de deviner."
+                ),
+                "criteria": dish_criteria,
+            },
+            "portion": {
+                "type": "score",
+                "instructions": "Quelle est la taille de la portion visible dans l'assiette ?",
+                # Score criteria is an ORDERED ARRAY (low → high), unlike
+                # Choice's criteria object — confirmed against the live API,
+                # which 400s on a dict here even though community docs show one.
+                "criteria": _JEV_PORTION_LEVELS,
+            },
+        }
+        data = await _jev_decision(state, questions)
+        answers = data.get("answers", {})
+        dish_answer = answers.get("dish", {})
+        dish = dish_answer.get("choice")
+        confidence = dish_answer.get("confidence") or 0
+
+        if not dish or dish == "autre" or dish not in ALGERIAN_DISH_NUTRITION or confidence < JEV_CONFIDENCE_THRESHOLD:
+            logger.info(f"Jev cascade: no confident match (dish={dish!r}, confidence={confidence}) — falling back to Gemini")
+            return None
+
+        base = ALGERIAN_DISH_NUTRITION[dish]
+        portion_score = answers.get("portion", {}).get("score")
+        multiplier = 1.0
+        if isinstance(portion_score, (int, float)):
+            level = _JEV_PORTION_LEVELS[min(2, max(0, round(portion_score)))]
+            multiplier = _JEV_PORTION_MULTIPLIER[level]
+
+        logger.info(f"Jev cascade: matched '{dish}' at confidence {confidence:.2f} — skipping Gemini")
+        return {
+            "detectedFoods": [{
+                "name": base["name"],
+                "nameAr": base["nameAr"],
+                "confidence": round(float(confidence), 2),
+                "caloriesPer100g": base["caloriesPer100g"],
+                "proteinPer100g": base["proteinPer100g"],
+                "carbsPer100g": base["carbsPer100g"],
+                "fatPer100g": base["fatPer100g"],
+                "nutritionalScore": base["nutritionalScore"],
+                "estimatedPortionGrams": round(base["defaultPortionGrams"] * multiplier),
+            }],
+            "advice": "",
+            "source": "jev_cascade",
+        }
+    except Exception as e:
+        logger.warning(f"Jev cascade failed, falling back to Gemini: {e}")
+        return None
+
+
 # ── Image analysis (multimodal) ────────────────────────────────────
 
 
@@ -406,6 +561,19 @@ async def _analyze_image_structured(
     return result
 
 
+async def _analyze_image_with_cascade(
+    image_bytes: bytes,
+    mime: str,
+    user_ctx: Optional[UserContext] = None,
+) -> dict:
+    """Entry point for both image-analysis endpoints: try the Jev cascade
+    first (no-op unless JEV_ENABLED), fall back to the Gemini vision call."""
+    jev_result = await _classify_dish_with_jev(image_bytes, mime)
+    if jev_result is not None:
+        return jev_result
+    return await _analyze_image_structured(image_bytes, mime, user_ctx)
+
+
 # JSON variant — base64 in body
 class ImageAnalysisRequest(BaseModel):
     imageBase64: str
@@ -417,7 +585,7 @@ class ImageAnalysisRequest(BaseModel):
 async def analyze_food_image_json(request: ImageAnalysisRequest):
     try:
         img_bytes = base64.b64decode(request.imageBase64)
-        result = await _analyze_image_structured(
+        result = await _analyze_image_with_cascade(
             img_bytes, request.mimeType or "image/jpeg", request.userContext,
         )
         return result
@@ -432,7 +600,7 @@ async def analyze_image_multipart(image: UploadFile = File(...)):
     try:
         img_bytes = await image.read()
         mime = _guess_mime(image.filename, fallback=image.content_type or "image/jpeg")
-        result = await _analyze_image_structured(img_bytes, mime, None)
+        result = await _analyze_image_with_cascade(img_bytes, mime, None)
         return result
     except Exception as e:
         logger.error(f"Image analysis error: {e}")

@@ -81,6 +81,33 @@ Score: A=très sain, B=sain, C=moyen, D=peu sain, E=mauvais.
 REPONDS EN JSON UNIQUEMENT.
 ```
 
+### Jev cascade prototype
+
+Off by default (`JEV_ENABLED=false`). When on, `_classify_dish_with_jev()` in
+`ai-service/src/main.py` runs before the Gemini vision call on every meal
+photo: it asks Jev (TypeSafe's decision model, reached through OpenRouter's
+`/api/alpha/decisions` endpoint, same `OPENROUTER_API_KEY`) to pick the dish
+from NutriDz's closed list of known Algerian dishes (`ALGERIAN_DISH_NUTRITION`)
+plus `"autre"`, and to score the portion size.
+
+- **Confident match** (`dish != "autre"` and `confidence >= JEV_CONFIDENCE_THRESHOLD`,
+  default 0.8): returns the dish's nutrition straight from
+  `ALGERIAN_DISH_NUTRITION` — no Gemini call. Jev's own pricing and the
+  quickstart example in OpenRouter's docs put this well under the cost of a
+  Gemini vision call.
+- **Anything else** ("autre", low confidence, or any error): falls straight
+  through to the existing `_analyze_image_structured()` Gemini path, same as
+  if the cascade were disabled.
+- `source: "jev_cascade"` is added to the response when Jev's answer was
+  used, for logging — the Java backend ignores unknown fields.
+
+**Before relying on this in production:** TypeSafe's own docs call Jev's
+image input a preview feature, and `ALGERIAN_DISH_NUTRITION`'s per-100g
+values are estimates (same as the drink values already hardcoded in the
+Gemini prompt above), not verified against the `foods` table. Test against
+real meal photos and tune `JEV_CONFIDENCE_THRESHOLD` from that traffic before
+turning `JEV_ENABLED` on anywhere real users hit it.
+
 ### Chat system prompt
 
 The AI is told it's a nutrition assistant for Algerian users, can answer in FR / AR / Darija / EN, must remind that it doesn't replace medical advice.
